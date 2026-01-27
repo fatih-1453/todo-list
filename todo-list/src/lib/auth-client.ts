@@ -2,7 +2,7 @@ import { createAuthClient } from "better-auth/react"
 import { organizationClient } from "better-auth/client/plugins"
 
 export const authClient = createAuthClient({
-    baseURL: process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || "", // Relative path for proxy
+    baseURL: "/api/auth", // Use relative path to leverage Next.js proxy
     fetchOptions: {
         headers: {
             'Bypass-Tunnel-Reminder': 'true',
@@ -14,7 +14,7 @@ export const authClient = createAuthClient({
     ]
 })
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api"
+export const API_BASE_URL = "/api"
 
 export const {
     signIn,

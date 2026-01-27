@@ -11,7 +11,11 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/uploads/:path*',
-        destination: 'http://localhost:3002/uploads/:path*',
+        destination: (process.env.BACKEND_URL || 'http://localhost:3002') + '/uploads/:path*',
+      },
+      {
+        source: '/api/:path*',
+        destination: (process.env.BACKEND_URL || 'http://localhost:3002') + '/api/:path*',
       },
     ];
   },
