@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  /* Core Colors */
+  --bg-main: #F5F5F0;
+  --bg-card: #FFFFFF;
+
+  /* Accents */
+  --accent-yellow: #FFD93D;
+  --accent-orange: #FF9500;
+  --accent-green: #4CD964;
+  --accent-red: #FF3B30;
+  --accent-pink: #FF6B9D;
+
+  /* Text */
+  --text-primary: #1A1A1A;
+  --text-secondary: #6B6B6B;
+
+  /* Tailwind standard mappings */
+  --background: var(--bg-main);
+  --foreground: var(--text-primary);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-main: var(--bg-main);
+  --color-card: var(--bg-card);
+
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-orange: var(--accent-orange);
+  --color-accent-green: var(--accent-green);
+  --color-accent-red: var(--accent-red);
+  --color-accent-pink: var(--accent-pink);
+
+  --color-txt-primary: var(--text-primary);
+  --color-txt-secondary: var(--text-secondary);
+}
+
+
+body {
+  background: var(--bg-main);
+  color: var(--text-primary);
+  /* Font checks in layout.tsx */
+}
+
+@layer utilities {
+  .scrollbar-none {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+}
