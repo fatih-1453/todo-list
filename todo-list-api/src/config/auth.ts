@@ -30,12 +30,14 @@ export const auth = betterAuth({
     trustedOrigins: [
         process.env.FRONTEND_URL || 'http://localhost:3000',
         'http://localhost:3000',
-        // 'http://192.168.11.106:3000', // Covered by FRONTEND_URL
+        'https://ravishing-presence-production-6778.up.railway.app',
     ],
     baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3001/api/auth",
     advanced: {
         defaultCookieAttributes: {
-            secure: false,
+            secure: true, // Always secure for modern cross-site auth
+            sameSite: 'none', // Always none for cross-site auth
         },
+        useSecureCookies: true, // Force secure cookies logic in better-auth
     },
 });
