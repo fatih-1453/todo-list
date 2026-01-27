@@ -47,7 +47,7 @@ export function TopNav() {
         }
     }
 
-    const handleOrgSwitch = (orgId: number) => {
+    const handleOrgSwitch = (orgId: string | number) => {
         setActiveOrgId(orgId.toString())
         setIsOrgDropdownOpen(false)
     }
