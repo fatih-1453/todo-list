@@ -18,21 +18,7 @@ ALTER TABLE "member" DROP CONSTRAINT "member_organizationId_organizations_id_fk"
 --> statement-breakpoint
 ALTER TABLE "member" DROP CONSTRAINT "member_userId_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "tasks" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "reminders" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "performance_stats" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "departments" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "positions" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "action_plans" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "action_plans" ALTER COLUMN "org_id" DROP NOT NULL;--> statement-breakpoint
-ALTER TABLE "folders" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "folders" ALTER COLUMN "org_id" DROP NOT NULL;--> statement-breakpoint
-ALTER TABLE "files" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "files" ALTER COLUMN "org_id" DROP NOT NULL;--> statement-breakpoint
-ALTER TABLE "assessments" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "programs" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "big_data" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
-ALTER TABLE "targets" ALTER COLUMN "org_id" SET DATA TYPE text;--> statement-breakpoint
+
 ALTER TABLE "invitation" ADD COLUMN "organization_id" text NOT NULL;--> statement-breakpoint
 ALTER TABLE "invitation" ADD COLUMN "expires_at" timestamp NOT NULL;--> statement-breakpoint
 ALTER TABLE "invitation" ADD COLUMN "inviter_id" text NOT NULL;--> statement-breakpoint

@@ -134,7 +134,7 @@ CREATE TABLE "task_tags" (
 CREATE TABLE "tasks" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
-	"org_id" integer,
+	"org_id" text,
 	"program_id" integer,
 	"text" text NOT NULL,
 	"done" boolean DEFAULT false,
@@ -171,7 +171,7 @@ CREATE TABLE "reminder_assignees" (
 CREATE TABLE "reminders" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
-	"org_id" integer,
+	"org_id" text,
 	"title" text,
 	"time" time NOT NULL,
 	"date" date NOT NULL,
@@ -212,7 +212,7 @@ CREATE TABLE "chat_participants" (
 CREATE TABLE "performance_stats" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
-	"org_id" integer,
+	"org_id" text,
 	"date" date NOT NULL,
 	"tasks_done" integer DEFAULT 0,
 	"tasks_ongoing" integer DEFAULT 0,
@@ -231,7 +231,7 @@ CREATE TABLE "groups" (
 --> statement-breakpoint
 CREATE TABLE "departments" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"org_id" integer NOT NULL,
+	"org_id" text NOT NULL,
 	"code" text NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
@@ -242,7 +242,7 @@ CREATE TABLE "departments" (
 --> statement-breakpoint
 CREATE TABLE "positions" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"org_id" integer NOT NULL,
+	"org_id" text NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
 	"status" boolean DEFAULT true,
@@ -252,7 +252,7 @@ CREATE TABLE "positions" (
 --> statement-breakpoint
 CREATE TABLE "action_plans" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"org_id" integer NOT NULL,
+	"org_id" text NOT NULL,
 	"created_by_id" text NOT NULL,
 	"div" text,
 	"wig" text,
@@ -280,7 +280,7 @@ CREATE TABLE "action_plans" (
 CREATE TABLE "folders" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
-	"org_id" integer NOT NULL,
+	"org_id" text NOT NULL,
 	"created_by_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now()
@@ -294,7 +294,7 @@ CREATE TABLE "files" (
 	"path" text NOT NULL,
 	"folder_id" integer,
 	"assessment_id" integer,
-	"org_id" integer NOT NULL,
+	"org_id" text NOT NULL,
 	"uploaded_by_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now()
@@ -310,7 +310,7 @@ CREATE TABLE "assessments" (
 	"description" text,
 	"cover" text,
 	"assignee_id" text,
-	"org_id" integer NOT NULL,
+	"org_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now()
 );
@@ -332,7 +332,7 @@ CREATE TABLE "comments" (
 --> statement-breakpoint
 CREATE TABLE "programs" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"org_id" integer NOT NULL,
+	"org_id" text NOT NULL,
 	"title" text NOT NULL,
 	"status" text DEFAULT 'Planning' NOT NULL,
 	"deadline" text,
@@ -350,7 +350,7 @@ CREATE TABLE "programs" (
 --> statement-breakpoint
 CREATE TABLE "big_data" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"org_id" integer NOT NULL,
+	"org_id" text NOT NULL,
 	"entry_type" text DEFAULT 'Retail',
 	"name" text NOT NULL,
 	"email" text,
@@ -378,7 +378,7 @@ CREATE TABLE "big_data" (
 --> statement-breakpoint
 CREATE TABLE "targets" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"org_id" integer NOT NULL,
+	"org_id" text NOT NULL,
 	"title" text NOT NULL,
 	"type" text NOT NULL,
 	"target_amount" numeric NOT NULL,
