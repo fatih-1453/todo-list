@@ -29,7 +29,7 @@ export default function UploadPage() {
     // Fetch folders for dropdown
     const { data: folders } = useQuery({
         queryKey: ['folders'],
-        queryFn: fileService.getFolders
+        queryFn: () => fileService.getFolders()
     })
 
     const handleDrag = (e: React.DragEvent) => {
