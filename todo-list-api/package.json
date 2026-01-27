@@ -9,7 +9,7 @@
     "scripts": {
         "dev": "tsx watch src/index.ts",
         "build": "echo 'Build skipped (using tsx)'",
-        "start": "tsx src/index.ts",
+        "start": "drizzle-kit migrate && tsx src/index.ts",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
         "db:push": "drizzle-kit push",
@@ -20,6 +20,7 @@
         "better-auth": "^1.2.0",
         "cors": "^2.8.5",
         "dotenv": "^16.4.5",
+        "drizzle-kit": "^0.31.4",
         "drizzle-orm": "^0.41.0",
         "express": "^4.21.0",
         "multer": "^2.0.2",
@@ -32,7 +33,6 @@
         "@types/multer": "^2.0.0",
         "@types/node": "^22.19.5",
         "@types/pg": "^8.11.10",
-        "drizzle-kit": "^0.31.4",
         "typescript": "^5.7.0"
     }
 }

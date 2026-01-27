@@ -15,6 +15,7 @@ const PORT = Number(process.env.PORT) || 3001;
 const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:3000',
     'http://localhost:3000',
+    'https://ravishing-presence-production-6778.up.railway.app',
     // 'http://192.168.11.106:3000', // Covered by FRONTEND_URL if set correctly
 ];
 
