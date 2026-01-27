@@ -4,7 +4,7 @@ import { organizationClient } from "better-auth/client/plugins"
 export const authClient = createAuthClient({
     baseURL: typeof window === "undefined"
         ? (process.env.BETTER_AUTH_URL || "http://localhost:3000")
-        : "/api/auth", // Relative path for proxy on client
+        : window.location.origin + "/api/auth", // Absolute URL for client (Proxy)
     fetchOptions: {
         headers: {
             'Bypass-Tunnel-Reminder': 'true',
