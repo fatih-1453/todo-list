@@ -19,7 +19,7 @@ export function FileManager() {
     const queryClient = useQueryClient()
     const { data: folders } = useQuery({
         queryKey: ['folders'],
-        queryFn: fileService.getFolders
+        queryFn: () => fileService.getFolders()
     })
 
     const { data: allFiles } = useQuery({
