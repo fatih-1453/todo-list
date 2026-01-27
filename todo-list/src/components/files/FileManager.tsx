@@ -163,8 +163,8 @@ function FolderItem({ folder, files, onDelete, onDeleteFile }: {
 function FileItem({ file, onDelete }: { file: FileRecord, onDelete: () => void }) {
     const handleDownload = (e: React.MouseEvent) => {
         e.stopPropagation()
-        // Use environment variable for API URL or default to empty string (which implies relative path if using proxy, or needs proper env var)
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+        // Use relative path for proxy
+        const apiUrl = "";
         // Remove duplicate slashes if any
         const path = file.path.startsWith('/') ? file.path : `/${file.path}`;
         window.open(`${apiUrl}${path}`, '_blank');

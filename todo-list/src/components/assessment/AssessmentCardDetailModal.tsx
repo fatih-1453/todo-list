@@ -72,10 +72,9 @@ export function AssessmentCardDetailModal({ card, isOpen, onClose }: AssessmentC
 
     const isImage = (file: any) => file?.type?.startsWith('image/')
 
-    // Construct proper URL for local files
     const getFileUrl = (path: string) => {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
-        return `${baseUrl}${path}`;
+        // Use relative path for proxy
+        return path;
     }
 
     const loadExcelData = async (url: string) => {
