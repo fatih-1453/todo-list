@@ -148,44 +148,76 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                     return !isNaN(d.getTime()) ? d.toISOString() : undefined;
                 };
 
-                // Mapping based on Template Headers:
-                // 0: Nama, 1: Plan, 2: Program, 3: Catatan, 4: Indikator, 5: Lokasi, 
-                // 6: StartDate, 7: EndDate, 8: TargetKegiatan, 9: TargetPenerima, 
-                // 10: Tujuan, 11: Jabatan, 12: Subdivisi, 13: Divisi, 14: DivPelaksana, 15: Klasifikasi
+                // Dynamic Header Mapping
+                const headers = (jsonData[headerRowIndex] as string[]).map(h => String(h).toLowerCase().trim());
 
-                return {
-                    pic: row[0] || '',
-                    plan: row[1] || 'No Plan',
-                    program: row[2] || '',
-                    notes: row[3] || '',
-                    indikator: row[4] || '',
-                    lokasi: row[5] || '',
-                    startDate: parseDate(row[6]),
-                    endDate: parseDate(row[7]),
-                    targetActivity: safeNum(row[8]),
-                    targetReceiver: row[9] || '',
-                    goal: row[10] || '',
-                    position: row[11] || '',
-                    subdivisi: row[12] || '',
-                    div: row[13] || '',
-                    executingAgency: row[14] || '',
-                    classification: row[15] || '',
+                const getIdx = (keywords: string[]) => headers.findIndex(h => keywords.some(k => h.includes(k)));
 
-                    // Defaults
-                    realWeek1: 'Pending',
-                    realActivity: 0
+                const map = {
+                    pic: getIdx(['nama', 'pic', 'person']),
+                    plan: getIdx(['plan', 'lead', 'activity', 'kegiatan']),
+                    program: getIdx(['program']),
+                    notes: getIdx(['catatan', 'notes', 'keterangan']),
+                    indikator: getIdx(['indikator']),
+                    lokasi: getIdx(['lokasi', 'location']),
+                    startDate: getIdx(['start', 'mulai']),
+                    endDate: getIdx(['end', 'selesai']),
+                    targetActivity: getIdx(['target kegiatan', 'target activity']),
+                    targetReceiver: getIdx(['target penerima', 'receiver']),
+                    goal: getIdx(['tujuan', 'goal']),
+                    position: getIdx(['jabatan', 'position']),
+                    subdivisi: getIdx(['subdivisi', 'subdivision']),
+                    div: getIdx(['divisi', 'division']), // exclude 'div pelaksana' if possible or check order? 'divisi' usually matches 'divisi'
+                    executingAgency: getIdx(['biro', 'pelaksana', 'agency']),
+                    classification: getIdx(['klasifikasi', 'class']),
+                    realActivity: getIdx(['realisasi kegiatan', 'real activity']),
+                    realWeek1: getIdx(['status'])
                 };
-            };
 
-            const payload = jsonData.slice(dataStartIndex)
-                .map(processRow)
-                .filter(item => item.plan !== 'No Plan' && item.plan !== '');
+                // Correction: "divisi" might match "subdivisi" if we are not careful. 
+                // Better to use exact match or specific unique strings if possible, or order preference.
+                // But 'subdivisi' includes 'divisi'. 
+                // Let's refine:
+                const exactIdx = (key: string) => headers.indexOf(key);
 
-            return apiClient.post('/action-plans/bulk', payload)
-        },
-        onSuccess: () => {
-            setIsSuccess(true)
-            queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
+                // Helper to get cell value
+                const getVal = (row: any[], idx: number) => idx !== -1 ? row[idx] : undefined;
+
+                const processRow = (row: any[]) => {
+                    if (!row || row.length === 0) return null;
+
+                    return {
+                        pic: getVal(row, map.pic) || '',
+                        plan: getVal(row, map.plan) || 'No Plan',
+                        program: getVal(row, map.program) || '',
+                        notes: getVal(row, map.notes) || '',
+                        indikator: getVal(row, map.indikator) || '',
+                        lokasi: getVal(row, map.lokasi) || '',
+                        startDate: parseDate(getVal(row, map.startDate)),
+                        endDate: parseDate(getVal(row, map.endDate)),
+                        targetActivity: safeNum(getVal(row, map.targetActivity)),
+                        targetReceiver: getVal(row, map.targetReceiver) || '',
+                        goal: getVal(row, map.goal) || '',
+                        position: getVal(row, map.position) || '',
+                        subdivisi: getVal(row, map.subdivisi) || '',
+                        div: getVal(row, map.div) || '', // might need robust check
+                        executingAgency: getVal(row, map.executingAgency) || '',
+                        classification: getVal(row, map.classification) || '',
+
+                        realActivity: safeNum(getVal(row, map.realActivity)) || 0,
+                        realWeek1: getVal(row, map.realWeek1) || 'Pending'
+                    };
+                };
+
+                const payload = jsonData.slice(headerRowIndex + 1)
+                    .map(processRow)
+                    .filter(item => item && item.plan !== 'No Plan' && item.plan !== '');
+
+                return apiClient.post('/action-plans/bulk', payload)
+            },
+                onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
+            toast.success("Action plans imported successfully")
             setTimeout(() => {
                 onClose()
             }, 1500)
