@@ -209,14 +209,15 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                     };
                 };
 
-                const payload = jsonData.slice(headerRowIndex + 1)
+                const payload = jsonData.slice(1) // Data starts at index 1 (after header at 0)
                     .map(processRow)
                     .filter(item => item && item.plan !== 'No Plan' && item.plan !== '');
 
                 return apiClient.post('/action-plans/bulk', payload)
             },
-                onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
             toast.success("Action plans imported successfully")
             setTimeout(() => {
                 onClose()
