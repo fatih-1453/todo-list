@@ -18,8 +18,8 @@ interface ActionPlan {
     startDate?: string // New Field
     createdAt?: string
     realWeek1?: string // Status
-    targetNominal?: number
-    realNominal?: number
+    targetActivity?: number
+    realActivity?: number
     pic?: string
 }
 
@@ -155,12 +155,30 @@ export default function TimelinePage() {
 
                     // Calculate Progress
                     let progress = 0;
-                    if (p.realWeek1 && p.realWeek1.toLowerCase().includes('done')) {
+                    const status = p.realWeek1?.toLowerCase() || '';
+
+                    if (status.includes('done')) {
                         progress = 100;
                     }
-                    else if ((p.targetNominal || 0) > 0 && (p.realNominal || 0) >= (p.targetNominal || 0)) {
-                        progress = 100;
+                    else if (status.includes('on progres')) {
+                        // Use ratio if available, otherwise 50%
+                        if ((p.targetActivity || 0) > 0) {
+                            progress = Math.min(Math.round(((p.realActivity || 0) / (p.targetActivity || 1)) * 100), 100);
+                        } else {
+                            progress = 50;
+                        }
                     }
+                    else if (status.includes('progres')) {
+                        if ((p.targetActivity || 0) > 0) {
+                            progress = Math.min(Math.round(((p.realActivity || 0) / (p.targetActivity || 1)) * 100), 100);
+                        } else {
+                            progress = 25; // Distinct from On Progres
+                        }
+                    }
+                    else if ((p.targetActivity || 0) > 0 && (p.realActivity || 0) > 0) {
+                        progress = Math.min(Math.round(((p.realActivity || 0) / (p.targetActivity || 1)) * 100), 100);
+                    }
+
                     picProgressSum += progress
 
                     // Color Code

@@ -18,10 +18,14 @@ export default function ActionPlanPage() {
     const [isCreateOpen, setIsCreateOpen] = React.useState(false)
     const [editingPlan, setEditingPlan] = React.useState<ActionPlan | null>(null)
     const [search, setSearch] = React.useState("")
-    const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-        from: startOfMonth(new Date()),
-        to: endOfMonth(new Date()),
-    })
+    const [dateRange, setDateRange] = React.useState<DateRange | undefined>()
+
+    React.useEffect(() => {
+        setDateRange({
+            from: startOfMonth(new Date()),
+            to: endOfMonth(new Date()),
+        })
+    }, [])
 
     // Fetch Plans
     const { data: plans, isLoading } = useQuery({
@@ -121,6 +125,25 @@ export default function ActionPlanPage() {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
     })
 
+
+    // Update Mutation
+    const updatePlanMutation = useMutation({
+        mutationFn: ({ id, data }: { id: number, data: Partial<ActionPlan> }) =>
+            apiClient.put(`/action-plans/${id}`, data),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
+    })
+
+    const handleUpdateStatus = (id: number, status: string) => {
+        updatePlanMutation.mutate({ id, data: { realWeek1: status } })
+    }
+
+    const handleUpdateRealActivity = (id: number, value: string) => {
+        const num = parseInt(value)
+        if (!isNaN(num)) {
+            updatePlanMutation.mutate({ id, data: { realActivity: num } })
+        }
+    }
+
     return (
         <div className="h-screen flex flex-col bg-white overflow-hidden">
             {/* Toolbar */}
@@ -210,15 +233,34 @@ export default function ActionPlanPage() {
                                     </td>
 
                                     <td className="px-3 py-2 text-center font-semibold text-indigo-600 border-r border-gray-100">{p.targetActivity}</td>
-                                    <td className="px-3 py-2 text-center text-gray-700 border-r border-gray-100">{p.realActivity || 0}</td>
 
-                                    <td className="px-3 py-2 border-r border-gray-100">
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${p.realWeek1?.toLowerCase().includes('done')
-                                                ? 'bg-emerald-100 text-emerald-800'
-                                                : 'bg-amber-100 text-amber-800'
-                                            }`}>
-                                            {p.realWeek1 || 'Pending'}
-                                        </span>
+                                    {/* Realisasi Kegiatan (Editable) */}
+                                    <td className="px-0 py-0 text-center text-gray-700 border-r border-gray-100">
+                                        <input
+                                            type="number"
+                                            className="w-full h-full px-2 py-2 bg-transparent text-center focus:outline-none focus:bg-indigo-50 transition-colors"
+                                            defaultValue={p.realActivity || 0}
+                                            onBlur={(e) => handleUpdateRealActivity(p.id, e.target.value)}
+                                        />
+                                    </td>
+
+                                    {/* Status (Dropdown) */}
+                                    <td className="px-0 py-0 border-r border-gray-100 bg-transparent">
+                                        <select
+                                            className={`w-full h-full px-2 py-2 text-[10px] font-medium uppercase bg-transparent focus:outline-none cursor-pointer ${p.realWeek1?.toLowerCase() === 'done' ? 'text-emerald-700' :
+                                                    p.realWeek1?.toLowerCase() === 'on progres' ? 'text-amber-700' :
+                                                        p.realWeek1?.toLowerCase() === 'cancel' ? 'text-red-700' :
+                                                            'text-gray-500'
+                                                }`}
+                                            value={p.realWeek1 || 'Pending'}
+                                            onChange={(e) => handleUpdateStatus(p.id, e.target.value)}
+                                        >
+                                            <option value="Pending">Pending</option>
+                                            <option value="Cancel">Cancel</option>
+                                            <option value="Progres">Progres</option>
+                                            <option value="On Progres">On Progres</option>
+                                            <option value="Done">Done</option>
+                                        </select>
                                     </td>
 
                                     <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.targetReceiver}</td>

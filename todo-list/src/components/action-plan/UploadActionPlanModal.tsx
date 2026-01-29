@@ -57,111 +57,39 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                 return
             }
 
-            // Find the header row (look for "DIV" and "WIG" specifically to avoid matching Title row)
+            // Find the header row
             let headerRowIndex = -1;
             for (let i = 0; i < Math.min(jsonData.length, 10); i++) {
                 const rowStr = JSON.stringify(jsonData[i] || []).toLowerCase();
-                if (rowStr.includes("div") && rowStr.includes("wig")) {
+                if (rowStr.includes("plan") || rowStr.includes("program")) {
                     headerRowIndex = i;
                     break;
                 }
             }
 
             if (headerRowIndex === -1) {
-                setError("Could not find header row (DIV, Action Plan, etc). Please check the template.")
+                setError("Could not find header row. Please check the template.")
                 setFile(null)
                 return
             }
 
-            // Data starts 2 rows after main header (Title Row -> Header Row -> SubHeader Row -> Data)
-            // Actually in the image: 
-            // Row 1: ACTION PLAN (Title)
-            // Row 2: Headers (DIV... )
-            // Row 3: SubHeaders (Pekan 1...)
-            // Row 4: Data
-            // So if Header found at index 1 (Row 2), Data starts at index 3 (Row 4).
-            // Distance is +2.
-            // Dynamic check for data start index
-            let dataStartIndex = headerRowIndex + 1;
-            const nextRow = jsonData[headerRowIndex + 1];
-            if (nextRow) {
-                const rowStr = JSON.stringify(nextRow).toLowerCase();
-                if (rowStr.includes("pekan") || rowStr.includes("week") || rowStr.includes("evaluasi") || rowStr.includes("realisasi")) {
-                    dataStartIndex = headerRowIndex + 2;
-                }
-            }
-
-            // Fill Down State for Preview
-            let lastDiv = '';
-            let lastDept = ''; // Add other cached fields if displaying in preview
+            const dataStartIndex = headerRowIndex + 1;
 
             const processRow = (row: any[]) => {
-                // Safety helper: ensure number, default to 0 if NaN
-                const safeNum = (val: any) => {
-                    const num = Number(val);
-                    return isNaN(num) ? 0 : num;
-                };
-
-                // Helper to parse date (Excel serial or string)
-                const parseDate = (val: any) => {
-                    if (!val) return undefined;
-                    if (typeof val === 'number') {
-                        // Excel serial date
-                        return new Date(Math.round((val - 25569) * 86400 * 1000));
-                    }
-                    if (typeof val === 'string' && val.includes('/')) {
-                        const parts = val.split('/');
-                        if (parts.length === 3) {
-                            // Assume DD/MM/YY
-                            const day = parseInt(parts[0]);
-                            const month = parseInt(parts[1]) - 1;
-                            let year = parseInt(parts[2]);
-                            if (year < 100) year += 2000;
-                            const d = new Date(year, month, day);
-                            if (!isNaN(d.getTime())) return d;
-                        }
-                    }
-                    const d = new Date(val);
-                    return !isNaN(d.getTime()) ? d : undefined;
-                };
-
-                // Fill Down Logic for Preview
-                const currentDiv = row[0] ? String(row[0]) : '';
-                const currentDept = row[5] ? String(row[5]) : '';
-
-                if (currentDiv) lastDiv = currentDiv;
-                if (currentDept) lastDept = currentDept;
-
+                // Mapping based on Template:
+                // 0: Nama, 1: Plan, 2: Program, ... 13: Divisi
                 return {
-                    div: lastDiv, // Use filled val
-                    wig: row[1] || '',
-                    lag: row[2] || '',
-                    lead: row[3] || '',
-                    plan: row[4] || 'No Plan',
-                    department: lastDept,
-                    startDate: parseDate(row[6]),
-                    targetActivity: safeNum(row[7]),
-                    targetNominal: safeNum(row[8]),
-
-                    evalWeek1: safeNum(row[9]),
-                    evalWeek2: safeNum(row[10]),
-                    evalWeek3: safeNum(row[11]),
-                    evalWeek4: safeNum(row[12]),
-
-                    realWeek1: safeNum(row[13]),
-                    // realWeek2,3,4 removed
-
-                    notes: row[14] ? String(row[14]) : '', // New Notes column
-
-                    pic: row[15] || '',
-                    risk: row[16] || '',
+                    pic: row[0] || '',
+                    plan: row[1] || 'No Plan',
+                    program: row[2] || '',
+                    div: row[13] || '',
                 };
             };
 
             const rawData = jsonData.slice(dataStartIndex);
             const mappedData = rawData
                 .map(processRow)
-                .filter(item => item.plan !== 'No Plan' && item.plan !== ''); // Filter empty
+                .filter(item => item.plan !== 'No Plan' && item.plan !== '');
 
             setPreviewData(mappedData.slice(0, 5));
         } catch (err) {
@@ -178,41 +106,24 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
             const worksheet = workbook.Sheets[workbook.SheetNames[0]]
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
 
-            // Re-find header (same strict logic)
+            // Find header row: Look for "Plan" or "Program" or "Nama"
             let headerRowIndex = -1;
             for (let i = 0; i < Math.min(jsonData.length, 10); i++) {
                 const rowStr = JSON.stringify(jsonData[i] || []).toLowerCase();
-                if (rowStr.includes("div") && rowStr.includes("wig")) {
+                if (rowStr.includes("plan") || rowStr.includes("program")) {
                     headerRowIndex = i;
                     break;
                 }
             }
-            if (headerRowIndex === -1) throw new Error("Header not found");
-            // Dynamic check for data start index
-            // Check row after header. If it looks like data (has "Draft" or valid 4DX terms), assume data starts there.
-            // If it has "Pekan", "Week", "Evaluasi", assume it's a sub-header.
-            let dataStartIndex = headerRowIndex + 1;
-            const nextRow = jsonData[headerRowIndex + 1];
-            if (nextRow) {
-                const rowStr = JSON.stringify(nextRow).toLowerCase();
-                if (rowStr.includes("pekan") || rowStr.includes("week") || rowStr.includes("evaluasi") || rowStr.includes("realisasi")) {
-                    dataStartIndex = headerRowIndex + 2;
-                }
-            }
 
-            // Fill Down State
-            let lastDiv = '';
-            let lastWig = '';
-            let lastLag = '';
-            let lastLead = '';
-            let lastDept = '';
+            if (headerRowIndex === -1) throw new Error("Header not found. Please use the downloaded template.");
+
+            // Data starts immediately after header in the new template
+            const dataStartIndex = headerRowIndex + 1;
 
             const processRow = (row: any[]) => {
                 const safeNum = (val: any) => {
-                    if (typeof val === 'string') {
-                        // Handle numbers with thousands separators if needed, though usually Excel has raw numbers
-                        val = val.replace(/,/g, '');
-                    }
+                    if (typeof val === 'string') val = val.replace(/,/g, '');
                     const num = Number(val);
                     return isNaN(num) ? 0 : num;
                 };
@@ -222,64 +133,50 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                     if (typeof val === 'number') {
                         return new Date(Math.round((val - 25569) * 86400 * 1000)).toISOString();
                     }
-                    // Handle "DD/MM/YY" manually if standard parse fails or assumes US
-                    if (typeof val === 'string' && val.includes('/')) {
-                        const parts = val.split('/');
-                        if (parts.length === 3) {
-                            // Assume DD/MM/YY for ID locale
-                            const day = parseInt(parts[0]);
-                            const month = parseInt(parts[1]) - 1; // 0-indexed
-                            let year = parseInt(parts[2]);
-                            if (year < 100) year += 2000;
-                            const d = new Date(year, month, day);
-                            if (!isNaN(d.getTime())) return d.toISOString();
+                    if (typeof val === 'string') {
+                        // Try YYYY-MM-DD
+                        if (val.match(/^\d{4}-\d{2}-\d{2}$/)) return new Date(val).toISOString();
+                        // Try DD/MM/YYYY
+                        if (val.includes('/')) {
+                            const parts = val.split('/');
+                            if (parts.length === 3) {
+                                return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).toISOString();
+                            }
                         }
                     }
                     const d = new Date(val);
                     return !isNaN(d.getTime()) ? d.toISOString() : undefined;
                 };
 
-                // Fill Down Logic
-                const currentDiv = row[0] ? String(row[0]) : '';
-                const currentWig = row[1] ? String(row[1]) : '';
-                const currentLag = row[2] ? String(row[2]) : '';
-                const currentLead = row[3] ? String(row[3]) : '';
-                const currentDept = row[5] ? String(row[5]) : ''; // Department at index 5
-
-                if (currentDiv) lastDiv = currentDiv;
-                if (currentWig) lastWig = currentWig;
-                if (currentLag) lastLag = currentLag;
-                if (currentLead) lastLead = currentLead;
-                if (currentDept) lastDept = currentDept;
+                // Mapping based on Template Headers:
+                // 0: Nama, 1: Plan, 2: Program, 3: Catatan, 4: Indikator, 5: Lokasi, 
+                // 6: StartDate, 7: EndDate, 8: TargetKegiatan, 9: TargetPenerima, 
+                // 10: Tujuan, 11: Jabatan, 12: Subdivisi, 13: Divisi, 14: DivPelaksana, 15: Klasifikasi
 
                 return {
-                    div: lastDiv,
-                    wig: lastWig,
-                    lag: lastLag,
-                    lead: lastLead,
-                    plan: row[4] || 'No Plan',
-                    department: lastDept,
+                    pic: row[0] || '',
+                    plan: row[1] || 'No Plan',
+                    program: row[2] || '',
+                    notes: row[3] || '',
+                    indikator: row[4] || '',
+                    lokasi: row[5] || '',
                     startDate: parseDate(row[6]),
-                    targetActivity: safeNum(row[7]),
-                    targetNominal: safeNum(row[8]),
+                    endDate: parseDate(row[7]),
+                    targetActivity: safeNum(row[8]),
+                    targetReceiver: row[9] || '',
+                    goal: row[10] || '',
+                    position: row[11] || '',
+                    subdivisi: row[12] || '',
+                    div: row[13] || '',
+                    executingAgency: row[14] || '',
+                    classification: row[15] || '',
 
-                    evalWeek1: safeNum(row[9]),
-                    evalWeek2: safeNum(row[10]),
-                    evalWeek3: safeNum(row[11]),
-                    evalWeek4: safeNum(row[12]),
-
-                    realWeek1: row[13] ? String(row[13]) : '',
-                    realNominal: safeNum(row[14]),
-
-                    notes: row[15] ? String(row[15]) : '',
-
-                    pic: row[16] || '',
-                    risk: row[17] || '',
+                    // Defaults
+                    realWeek1: 'Pending',
+                    realActivity: 0
                 };
             };
 
-            // Use simple for loop to maintain state or map with external state
-            // map is fine since it processes in order
             const payload = jsonData.slice(dataStartIndex)
                 .map(processRow)
                 .filter(item => item.plan !== 'No Plan' && item.plan !== '');
@@ -352,17 +249,19 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                                         <table className="min-w-full divide-y divide-gray-200 text-xs">
                                             <thead className="bg-gray-50">
                                                 <tr>
-                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">DIV</th>
-                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">Action Plan</th>
-                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">PIC</th>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">Nama</th>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">Plan</th>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">Program</th>
+                                                    <th className="px-3 py-2 text-left font-medium text-gray-500">Divisi</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
                                                 {previewData.map((row, idx) => (
                                                     <tr key={idx}>
-                                                        <td className="px-3 py-2 text-gray-900">{row.div}</td>
-                                                        <td className="px-3 py-2 text-gray-900 max-w-[200px] truncate">{row.plan}</td>
                                                         <td className="px-3 py-2 text-gray-900">{row.pic}</td>
+                                                        <td className="px-3 py-2 text-gray-900 max-w-[150px] truncate">{row.plan}</td>
+                                                        <td className="px-3 py-2 text-gray-900 max-w-[150px] truncate">{row.program}</td>
+                                                        <td className="px-3 py-2 text-gray-900">{row.div}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
