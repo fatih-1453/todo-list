@@ -36,10 +36,19 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({ isOpen, on
         const { id, orgId, createdAt, updatedAt, ...rest } = emp;
 
         // Convert nulls to undefined for form compatibility
-        const sanitized = Object.entries(rest).reduce((acc, [key, value]) => ({
-            ...acc,
-            [key]: value === null ? undefined : value
-        }), {} as Record<string, any>);
+        const sanitized = Object.entries(rest).reduce((acc, [key, value]) => {
+            let sanitizedValue = value === null ? undefined : value;
+
+            // Format dates for input type="date"
+            if ((key === 'dateOfBirth' || key === 'joinDate') && typeof value === 'string') {
+                sanitizedValue = value.split('T')[0];
+            }
+
+            return {
+                ...acc,
+                [key]: sanitizedValue
+            };
+        }, {} as Record<string, any>);
 
         return sanitized as NewEmployee;
     };
