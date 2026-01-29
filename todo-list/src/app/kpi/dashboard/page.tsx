@@ -49,7 +49,7 @@ const itemVariants = {
     visible: {
         y: 0,
         opacity: 1,
-        transition: { type: "spring", stiffness: 100 }
+        transition: { type: "spring" as const, stiffness: 100 }
     }
 }
 
@@ -309,7 +309,7 @@ export default function DashboardPage() {
                         <motion.div
                             key={item.title}
                             variants={itemVariants}
-                            whileHover={{ y: -5, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
+                            whileHover={{ y: -5, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
                             className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl border border-white/20 shadow-lg shadow-slate-200/50 relative overflow-hidden group"
                         >
                             <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${item.gradient} opacity-5 rounded-bl-full transition-transform duration-500 group-hover:scale-110`} />
@@ -439,7 +439,7 @@ export default function DashboardPage() {
                                     <Tooltip
                                         cursor={{ fill: '#f8fafc' }}
                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                        formatter={(val: number) => formatRp(val)}
+                                        formatter={(val: number | undefined) => formatRp(val || 0)}
                                     />
                                     <Legend wrapperStyle={{ paddingTop: '20px' }} />
                                     <Bar dataKey="Target" fill="#93c5fd" radius={[6, 6, 0, 0]} maxBarSize={32} />
@@ -483,7 +483,7 @@ export default function DashboardPage() {
                                         fill="#10b981"
                                         radius={[0, 6, 6, 0]}
                                         barSize={24}
-                                        background={{ fill: '#f1f5f9', radius: [0, 6, 6, 0] }}
+                                        background={{ fill: '#f1f5f9', radius: 6 }}
                                     />
                                 </BarChart>
                             </ResponsiveContainer>
