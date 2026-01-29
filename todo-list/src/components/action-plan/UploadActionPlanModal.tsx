@@ -215,8 +215,7 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
 
                 return apiClient.post('/action-plans/bulk', payload)
             },
-        },
-        onSuccess: () => {
+                onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
             toast.success("Action plans imported successfully")
             setTimeout(() => {
