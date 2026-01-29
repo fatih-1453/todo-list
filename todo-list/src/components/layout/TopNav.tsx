@@ -128,7 +128,11 @@ export function TopNav() {
 
                 {/* Date Display - Desktop only */}
                 <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
-                    <span>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</span>
+                    {mounted ? (
+                        <span>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</span>
+                    ) : (
+                        <span className="opacity-0">Loading Date</span> // Placeholder to prevent layout shift or content mismatch
+                    )}
                 </div>
             </div>
 
