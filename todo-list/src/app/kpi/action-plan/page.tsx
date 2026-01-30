@@ -395,9 +395,9 @@ export default function ActionPlanPage() {
                         {/* Division Dropdown */}
                         <div className="relative min-w-[160px]">
                             <Select value={selectedDivisi} onValueChange={setSelectedDivisi}>
-                                <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 rounded-full text-xs font-medium backdrop-blur-sm focus:ring-indigo-500 transition-all hover:bg-gray-100 hover:border-indigo-200">
+                                <SelectTrigger className="h-10 bg-white border border-gray-200 rounded-full text-xs font-medium focus:ring-indigo-500 transition-all hover:bg-gray-50 hover:border-indigo-200 shadow-sm">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Divisi:</span>
+                                        <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider">Divisi:</span>
                                         <SelectValue placeholder="All" />
                                     </div>
                                 </SelectTrigger>
@@ -414,9 +414,9 @@ export default function ActionPlanPage() {
                         {/* Name (PIC) Dropdown */}
                         <div className="relative min-w-[160px]">
                             <Select value={selectedPic} onValueChange={setSelectedPic}>
-                                <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 rounded-full text-xs font-medium backdrop-blur-sm focus:ring-indigo-500 transition-all hover:bg-gray-100 hover:border-indigo-200">
+                                <SelectTrigger className="h-10 bg-white border border-gray-200 rounded-full text-xs font-medium focus:ring-indigo-500 transition-all hover:bg-gray-50 hover:border-indigo-200 shadow-sm">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Name:</span>
+                                        <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider">Name:</span>
                                         <SelectValue placeholder="All" />
                                     </div>
                                 </SelectTrigger>
@@ -433,9 +433,9 @@ export default function ActionPlanPage() {
                         {/* Program Dropdown */}
                         <div className="relative min-w-[160px]">
                             <Select value={selectedProgram} onValueChange={setSelectedProgram}>
-                                <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 rounded-full text-xs font-medium backdrop-blur-sm focus:ring-indigo-500 transition-all hover:bg-gray-100 hover:border-indigo-200">
+                                <SelectTrigger className="h-10 bg-white border border-gray-200 rounded-full text-xs font-medium focus:ring-indigo-500 transition-all hover:bg-gray-50 hover:border-indigo-200 shadow-sm">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Prog:</span>
+                                        <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider">Prog:</span>
                                         <SelectValue placeholder="All" />
                                     </div>
                                 </SelectTrigger>
@@ -457,7 +457,7 @@ export default function ActionPlanPage() {
                                 placeholder="Search other..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-full pl-9 pr-4 h-10 text-xs bg-gray-50/50 border border-gray-200 rounded-full focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all outline-none"
+                                className="w-full pl-9 pr-4 h-10 text-xs bg-white border border-gray-200 rounded-full focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all outline-none shadow-sm"
                             />
                         </div>
 
