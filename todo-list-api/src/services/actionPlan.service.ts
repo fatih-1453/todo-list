@@ -1,4 +1,4 @@
-import { eq, desc, and, inArray } from 'drizzle-orm';
+import { eq, desc, and, inArray, sql } from 'drizzle-orm';
 import { db } from '../config/database';
 import { actionPlans, NewActionPlan } from '../db/schema/index';
 
@@ -62,8 +62,29 @@ export const actionPlanService = {
             endDate: parseDate(item.endDate)
         }));
 
-        const newPlans = await db.insert(actionPlans).values(sanitizedData).returning();
-        return newPlans;
+        try {
+            const newPlans = await db.insert(actionPlans).values(sanitizedData).returning();
+            return newPlans;
+        } catch (error: any) {
+            // Self-healing: Check for duplicate key error (sequence out of sync)
+            if (error.code === '23505' && error.constraint === 'action_plans_pkey') {
+                console.warn('[ActionPlan] Sequence out of sync, attempting self-repair...');
+                try {
+                    // Sync sequence to max(id) + 1
+                    // Note: This relies on Postgres specific function
+                    await db.execute(sql`SELECT setval(pg_get_serial_sequence('action_plans', 'id'), COALESCE(MAX(id), 1) + 1, false) FROM action_plans`);
+                    console.log('[ActionPlan] Sequence repaired. Retrying insert...');
+
+                    // Retry once
+                    const retryPlans = await db.insert(actionPlans).values(sanitizedData).returning();
+                    return retryPlans;
+                } catch (retryError) {
+                    console.error('[ActionPlan] Self-repair failed:', retryError);
+                    throw retryError; // Throw original or retry error? throw retry for now
+                }
+            }
+            throw error; // Re-throw other errors
+        }
     },
 
     // Update a plan
