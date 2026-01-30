@@ -18,20 +18,33 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
     const isEditing = !!initialData
 
     const [formData, setFormData] = React.useState({
-        div: "",
-        wig: "",
-        lag: "",
-        lead: "",
-        plan: "",
-        department: "",
-        pic: "",
+        // Core
+        pic: "", // Nama
+        plan: "", // Lead
+        program: "",
+        notes: "", // Catatan
+
+        // Context/Details
+        indikator: "",
+        lokasi: "",
+
+        // Dates
         startDate: "",
+        endDate: "",
+
+        // Metrics
         targetActivity: 0,
-        targetNominal: 0,
-        risk: "",
-        realWeek1: "",
-        notes: "",
-        realNominal: 0
+        realActivity: 0, // Realisasi Kegiatan
+        realWeek1: "", // Status
+
+        // Organization / Meta
+        targetReceiver: "",
+        goal: "", // Tujuan
+        position: "", // Jabatan
+        subdivisi: "",
+        div: "", // Divisi
+        executingAgency: "", // Div Pelaksana
+        classification: ""
     })
 
     // Reset or Fill on open
@@ -40,38 +53,46 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
             if (initialData) {
                 // Populate form for editing
                 setFormData({
-                    div: initialData.div || "",
-                    wig: initialData.wig || "",
-                    lag: initialData.lag || "",
-                    lead: initialData.lead || "",
-                    plan: initialData.plan || "",
-                    department: initialData.department || "",
                     pic: initialData.pic || "",
+                    plan: initialData.plan || "",
+                    program: initialData.program || "",
+                    notes: initialData.notes || "",
+                    indikator: initialData.indikator || "",
+                    lokasi: initialData.lokasi || "",
                     startDate: initialData.startDate ? new Date(initialData.startDate).toISOString().split('T')[0] : "",
+                    endDate: initialData.endDate ? new Date(initialData.endDate).toISOString().split('T')[0] : "",
                     targetActivity: initialData.targetActivity || 0,
-                    targetNominal: initialData.targetNominal || 0,
-                    realNominal: initialData.realNominal || 0, // New Field
-                    risk: initialData.risk || "",
+                    realActivity: initialData.realActivity || 0,
                     realWeek1: initialData.realWeek1 || "",
-                    notes: initialData.notes || ""
+                    targetReceiver: initialData.targetReceiver || "",
+                    goal: initialData.goal || "",
+                    position: initialData.position || "",
+                    subdivisi: initialData.subdivisi || "",
+                    div: initialData.div || "",
+                    executingAgency: initialData.executingAgency || "",
+                    classification: initialData.classification || ""
                 })
             } else {
                 // Reset for create
                 setFormData({
-                    div: "",
-                    wig: "",
-                    lag: "",
-                    lead: "",
-                    plan: "",
-                    department: "",
                     pic: "",
+                    plan: "",
+                    program: "",
+                    notes: "",
+                    indikator: "",
+                    lokasi: "",
                     startDate: "",
+                    endDate: "",
                     targetActivity: 0,
-                    targetNominal: 0,
-                    realNominal: 0, // New Field
-                    risk: "",
+                    realActivity: 0,
                     realWeek1: "",
-                    notes: ""
+                    targetReceiver: "",
+                    goal: "",
+                    position: "",
+                    subdivisi: "",
+                    div: "",
+                    executingAgency: "",
+                    classification: ""
                 })
             }
         }
@@ -95,21 +116,12 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
             };
 
             const payload = {
-                div: formData.div,
-                wig: formData.wig,
-                lag: formData.lag,
-                lead: formData.lead,
-                plan: formData.plan,
-                department: formData.department,
-                pic: formData.pic,
-                risk: formData.risk,
-                targetActivity: Math.floor(parseNum(formData.targetActivity)), // Ensure Integer
-                // Fix: directly use string for decimal to avoid precision or format issues (Drizzle expects string/number)
-                targetNominal: formData.targetNominal ? String(formData.targetNominal) : '0',
-                realNominal: formData.realNominal ? String(formData.realNominal) : '0', // New Field
-                realWeek1: formData.realWeek1,
-                notes: formData.notes,
+                // Maps directly to backend fields
+                ...formData,
+                targetActivity: Math.floor(parseNum(formData.targetActivity)),
+                realActivity: Math.floor(parseNum(formData.realActivity)),
                 startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+                endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
             }
 
             console.log("Submitting payload:", payload);
@@ -118,10 +130,7 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                 if (!initialData.id) throw new Error("Missing ID for update");
                 return apiClient.put(`/action-plans/${initialData.id}`, payload)
             } else {
-                return apiClient.post('/action-plans', {
-                    ...payload,
-                    evalWeek1: 0, evalWeek2: 0, evalWeek3: 0, evalWeek4: 0, // Defaults for eval
-                })
+                return apiClient.post('/action-plans', payload)
             }
         },
         onSuccess: () => {
@@ -140,7 +149,7 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-white rounded-2xl w-full max-w-4xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h2 className="font-bold text-lg text-gray-900">{isEditing ? "Edit Action Plan" : "New Action Plan"}</h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
@@ -148,93 +157,107 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                     </button>
                 </div>
 
-                <div className="p-6 overflow-y-auto flex-1 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase">Division (DIV)</label>
-                            <input name="div" value={formData.div} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="e.g. Commercial" />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase">Department</label>
-                            <input name="department" value={formData.department} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="e.g. Sales" />
-                        </div>
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-xs font-semibold text-gray-500 uppercase">WIG (Wildly Important Goal)</label>
-                        <input name="wig" value={formData.wig} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="Primary goal..." />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase">LAG Measure</label>
-                            <input name="lag" value={formData.lag} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="Historical metric..." />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase">LEAD Measure</label>
-                            <input name="lead" value={formData.lead} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="Predictive action..." />
-                        </div>
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-xs font-semibold text-gray-500 uppercase">Action Plan Description</label>
-                        <textarea name="plan" value={formData.plan} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none h-24 resize-none" placeholder="Describe the specific action..." />
-                    </div>
-
+                <div className="p-6 overflow-y-auto flex-1 space-y-6">
+                    {/* Row 1: Identification */}
                     <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase">PIC</label>
-                            <input name="pic" value={formData.pic} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Nama (PIC)</label>
+                            <input name="pic" value={formData.pic} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="Nama PIC..." />
                         </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Jabatan</label>
+                            <input name="position" value={formData.position} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="Jabatan..." />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Divisi</label>
+                            <input name="div" value={formData.div} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="Divisi..." />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Subdivisi</label>
+                            <input name="subdivisi" value={formData.subdivisi} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Div Pelaksana</label>
+                            <input name="executingAgency" value={formData.executingAgency} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
+                        </div>
+                    </div>
+
+                    {/* Row 2: Core Plan */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-semibold text-gray-500 uppercase">Lead (Activity Name)</label>
+                        <textarea name="plan" value={formData.plan} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none resize-none h-20" placeholder="Activity name..." />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Program</label>
+                            <input name="program" value={formData.program} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="Program name..." />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Tujuan (Goal)</label>
+                            <input name="goal" value={formData.goal} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="Goal..." />
+                        </div>
+                    </div>
+
+                    {/* Row 3: Details */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Indikator</label>
+                            <input name="indikator" value={formData.indikator} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Lokasi</label>
+                            <input name="lokasi" value={formData.lokasi} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
+                        </div>
+                    </div>
+
+                    {/* Row 4: Dates & Class */}
+                    <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-gray-500 uppercase">Start Date</label>
                             <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-gray-500 uppercase">Risk / Constraints</label>
-                            <input name="risk" value={formData.risk} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
+                            <label className="text-xs font-semibold text-gray-500 uppercase">End Date</label>
+                            <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Klasifikasi</label>
+                            <input name="classification" value={formData.classification} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
                         </div>
                     </div>
 
-                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-gray-500 uppercase">Target Activity (Qty)</label>
-                                <input type="number" name="targetActivity" value={formData.targetActivity} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-gray-500 uppercase">Target Nominal (Rp)</label>
-                                <input type="number" name="targetNominal" value={formData.targetNominal} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
-                            </div>
+                    {/* Row 5: Metrics & Status */}
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 grid grid-cols-4 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Target Kegiatan</label>
+                            <input type="number" name="targetActivity" value={formData.targetActivity} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
                         </div>
-
-                        <div className="border-t border-gray-200 pt-3">
-                            <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Realization & Notes</label>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] text-gray-500 uppercase">Realization Nominal (Rp)</label>
-                                    <input type="number" name="realNominal" value={formData.realNominal} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] text-gray-500 uppercase">Realization (W1)</label>
-                                    <StatusDropdown
-                                        value={formData.realWeek1}
-                                        onChange={(val) => setFormData(prev => ({ ...prev, realWeek1: val }))}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] text-gray-500 uppercase">Notes</label>
-                                    <input
-                                        name="notes"
-                                        value={formData.notes || ""}
-                                        onChange={handleChange}
-                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none"
-                                        placeholder="Add notes..."
-                                    />
-                                </div>
-                            </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Realisasi Kegiatan</label>
+                            <input type="number" name="realActivity" value={formData.realActivity} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Status</label>
+                            <StatusDropdown
+                                value={formData.realWeek1}
+                                onChange={(val) => setFormData(prev => ({ ...prev, realWeek1: val }))}
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-gray-500 uppercase">Target Penerima</label>
+                            <input name="targetReceiver" value={formData.targetReceiver} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" />
                         </div>
                     </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-semibold text-gray-500 uppercase">Catatan</label>
+                        <textarea name="notes" value={formData.notes} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none resize-none h-20" placeholder="Notes..." />
+                    </div>
+
                 </div>
 
                 <div className="p-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50">
@@ -254,4 +277,3 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
         </div>
     )
 }
-

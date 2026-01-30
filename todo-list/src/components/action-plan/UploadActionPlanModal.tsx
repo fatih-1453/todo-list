@@ -4,6 +4,7 @@ import * as React from "react"
 import { X, Upload, Loader2, FileSpreadsheet, AlertCircle, CheckCircle } from "lucide-react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
+import { toast } from "sonner"
 import * as XLSX from 'xlsx'
 
 interface UploadActionPlanModalProps {
@@ -216,7 +217,7 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                 return apiClient.post('/action-plans/bulk', payload)
             },
                 onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
+                queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
             toast.success("Action plans imported successfully")
             setTimeout(() => {
                 onClose()
