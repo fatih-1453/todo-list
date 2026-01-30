@@ -66,8 +66,9 @@ export default function ActionPlanPage() {
         let result = plans.filter((p) => {
             const matchesSearch = !search ||
                 (p.lead?.toLowerCase().includes(search.toLowerCase()) ||
-                    p.pic?.toLowerCase().includes(search.toLowerCase()) ||
-                    p.program?.toLowerCase().includes(search.toLowerCase()))
+                    p.pic?.toLowerCase().includes(search.toLowerCase()) || // pic represents "Nama"
+                    p.program?.toLowerCase().includes(search.toLowerCase()) ||
+                    p.divisi?.toLowerCase().includes(search.toLowerCase())) // added divisi
 
             let matchesDate = true
             if (dateRange?.from && p.startDate) {
@@ -85,7 +86,7 @@ export default function ActionPlanPage() {
             return matchesSearch && matchesDate
         })
 
-        // Sort: Priority to "Today" (closest date to today)
+        // Sort Logic
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
@@ -93,11 +94,22 @@ export default function ActionPlanPage() {
             const dateA = a.startDate ? new Date(a.startDate) : new Date(0)
             const dateB = b.startDate ? new Date(b.startDate) : new Date(0)
 
-            // Distance in milliseconds
+            // 1. Priority: Is Today?
+            const isTodayA = isSameDay(dateA, today)
+            const isTodayB = isSameDay(dateB, today)
+
+            if (isTodayA && !isTodayB) return -1
+            if (!isTodayA && isTodayB) return 1
+
+            // 2. Secondary: Date Distance (assuming we still want closest dates near top)
+            // Use time value difference to keep stable order for same dates
             const distA = Math.abs(dateA.getTime() - today.getTime())
             const distB = Math.abs(dateB.getTime() - today.getTime())
 
-            return distA - distB
+            if (distA !== distB) return distA - distB
+
+            // 3. Fallback: ID to ensure stability when editing
+            return (a.id || 0) - (b.id || 0)
         })
 
         return result
@@ -457,7 +469,7 @@ export default function ActionPlanPage() {
                                 const percent = Math.min(100, Math.round(((p.realActivity || 0) / (p.targetActivity || 1)) * 100))
 
                                 return (
-                                    <tr key={p.id} className={`group transition-all hover:bg-gray-50 ${selectedIds.includes(p.id) ? 'bg-indigo-50/60' : isRowToday ? 'bg-amber-50/70' : 'bg-white'}`}>
+                                    <tr key={p.id} className={`group transition-all hover:bg-gray-50 ${selectedIds.includes(p.id) ? 'bg-indigo-50/60' : isRowToday ? 'bg-amber-100 shadow-sm border-l-4 border-l-amber-500' : 'bg-white'}`}>
                                         <td className="px-4 py-3 border-r border-transparent">
                                             <input
                                                 type="checkbox"
