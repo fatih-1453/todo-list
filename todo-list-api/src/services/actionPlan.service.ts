@@ -2,6 +2,17 @@ import { eq, desc, and, inArray } from 'drizzle-orm';
 import { db } from '../config/database';
 import { actionPlans, NewActionPlan } from '../db/schema/index';
 
+// Helper to safely parse dates
+const parseDate = (date: any): Date | null => {
+    if (!date) return null;
+    if (date instanceof Date) return date;
+    if (typeof date === 'string') {
+        const parsed = new Date(date);
+        return isNaN(parsed.getTime()) ? null : parsed;
+    }
+    return null;
+};
+
 export const actionPlanService = {
     // Get all plans for an organization (with optional filters)
     async getAllByOrg(orgId: string, filters?: { department?: string, pic?: string }) {
@@ -28,12 +39,10 @@ export const actionPlanService = {
         console.log(`[ActionPlan] Creating:`, data);
         try {
             const sanitizedData = { ...data };
-            if (typeof sanitizedData.dueDate === 'string') {
-                sanitizedData.dueDate = new Date(sanitizedData.dueDate);
-            }
-            if (typeof sanitizedData.startDate === 'string') {
-                sanitizedData.startDate = new Date(sanitizedData.startDate);
-            }
+            sanitizedData.dueDate = parseDate(sanitizedData.dueDate);
+            sanitizedData.startDate = parseDate(sanitizedData.startDate);
+            sanitizedData.endDate = parseDate(sanitizedData.endDate);
+
             const [newPlan] = await db.insert(actionPlans).values(sanitizedData).returning();
             return newPlan;
         } catch (e) {
@@ -48,9 +57,9 @@ export const actionPlanService = {
         // Sanitize all items
         const sanitizedData = data.map(item => ({
             ...item,
-            ...item,
-            dueDate: typeof item.dueDate === 'string' ? new Date(item.dueDate) : item.dueDate,
-            startDate: typeof item.startDate === 'string' ? new Date(item.startDate) : item.startDate
+            dueDate: parseDate(item.dueDate),
+            startDate: parseDate(item.startDate),
+            endDate: parseDate(item.endDate)
         }));
 
         const newPlans = await db.insert(actionPlans).values(sanitizedData).returning();
@@ -68,16 +77,14 @@ export const actionPlanService = {
             const sanitizedData = { ...updatableData };
 
             // Helper to handle date strings
-            if (typeof sanitizedData.dueDate === 'string') {
-                sanitizedData.dueDate = sanitizedData.dueDate ? new Date(sanitizedData.dueDate) : null;
-            }
-            if (typeof sanitizedData.startDate === 'string') {
-                sanitizedData.startDate = sanitizedData.startDate ? new Date(sanitizedData.startDate) : null;
-            }
+            if (sanitizedData.dueDate !== undefined) sanitizedData.dueDate = parseDate(sanitizedData.dueDate);
+            if (sanitizedData.startDate !== undefined) sanitizedData.startDate = parseDate(sanitizedData.startDate);
+            if (sanitizedData.endDate !== undefined) sanitizedData.endDate = parseDate(sanitizedData.endDate);
 
             // Helper to handle empty strings for numeric/decimal fields
             // List of numeric fields based on schema
-            const numericFields = ['targetNominal', 'realNominal', 'targetActivity', 'evalWeek1', 'evalWeek2', 'evalWeek3', 'evalWeek4'];
+            const numericFields = ['targetNominal', 'realNominal', 'targetActivity'];
+            // Removed old evaluation week fields
 
             for (const field of numericFields) {
                 if (sanitizedData[field] === "") {
