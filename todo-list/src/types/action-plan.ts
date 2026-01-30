@@ -1,25 +1,25 @@
 export interface ActionPlan {
     id: number
     createdById?: string
+    orgId?: string
 
     // Core
-    plan: string // Maps to "Lead" column (Activity Name)
+    lead: string // Activity Name (previously plan)
     program?: string
-    div?: string // Division
+    goal?: string // Tujuan
 
-    // People
-    pic?: string // Nama
-    position?: string // Jabatan
+    // Organization
+    divisi?: string // Division (previously div)
     subdivisi?: string
     department?: string
     executingAgency?: string // Div Pelaksana
+    position?: string // Jabatan
+    pic?: string // Person In Charge (Nama)
     targetReceiver?: string // Target Penerima
 
-    // Details
-    notes?: string // Catatan
+    // Details(Context)
     indikator?: string
     lokasi?: string
-    goal?: string // Tujuan
     classification?: string // Klasifikasi Pelaksanaan
 
     // Dates
@@ -34,11 +34,10 @@ export interface ActionPlan {
     realNominal?: number | string
 
     // Status / Tracking
-    realWeek1?: string // Used as Status (Done/In Progress)
+    status?: string // (Done/In Progress)
+    notes?: string // Catatan
+    risk?: string // SDM & Risk analysis
 
-    // Legacy / 4DX
-    wig?: string
-    lag?: string
-    lead?: string
-    risk?: string
+    createdAt?: string
+    updatedAt?: string
 }

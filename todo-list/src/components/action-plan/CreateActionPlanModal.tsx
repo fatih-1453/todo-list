@@ -20,7 +20,7 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
     const [formData, setFormData] = React.useState({
         // Core
         pic: "", // Nama
-        plan: "", // Lead
+        lead: "", // Activity Name (was plan)
         program: "",
         notes: "", // Catatan
 
@@ -35,14 +35,14 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
         // Metrics
         targetActivity: 0,
         realActivity: 0, // Realisasi Kegiatan
-        realWeek1: "", // Status
+        status: "", // (was realWeek1)
 
         // Organization / Meta
         targetReceiver: "",
         goal: "", // Tujuan
         position: "", // Jabatan
         subdivisi: "",
-        div: "", // Divisi
+        divisi: "", // (was div)
         executingAgency: "", // Div Pelaksana
         classification: ""
     })
@@ -54,7 +54,7 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                 // Populate form for editing
                 setFormData({
                     pic: initialData.pic || "",
-                    plan: initialData.plan || "",
+                    lead: initialData.lead || "",
                     program: initialData.program || "",
                     notes: initialData.notes || "",
                     indikator: initialData.indikator || "",
@@ -63,12 +63,12 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                     endDate: initialData.endDate ? new Date(initialData.endDate).toISOString().split('T')[0] : "",
                     targetActivity: initialData.targetActivity || 0,
                     realActivity: initialData.realActivity || 0,
-                    realWeek1: initialData.realWeek1 || "",
+                    status: initialData.status || "",
                     targetReceiver: initialData.targetReceiver || "",
                     goal: initialData.goal || "",
                     position: initialData.position || "",
                     subdivisi: initialData.subdivisi || "",
-                    div: initialData.div || "",
+                    divisi: initialData.divisi || "",
                     executingAgency: initialData.executingAgency || "",
                     classification: initialData.classification || ""
                 })
@@ -76,7 +76,7 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                 // Reset for create
                 setFormData({
                     pic: "",
-                    plan: "",
+                    lead: "",
                     program: "",
                     notes: "",
                     indikator: "",
@@ -85,12 +85,12 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                     endDate: "",
                     targetActivity: 0,
                     realActivity: 0,
-                    realWeek1: "",
+                    status: "",
                     targetReceiver: "",
                     goal: "",
                     position: "",
                     subdivisi: "",
-                    div: "",
+                    divisi: "",
                     executingAgency: "",
                     classification: ""
                 })
@@ -170,7 +170,7 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                         </div>
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-gray-500 uppercase">Divisi</label>
-                            <input name="div" value={formData.div} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="Divisi..." />
+                            <input name="divisi" value={formData.divisi} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none" placeholder="Divisi..." />
                         </div>
                     </div>
 
@@ -188,7 +188,7 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                     {/* Row 2: Core Plan */}
                     <div className="space-y-1">
                         <label className="text-xs font-semibold text-gray-500 uppercase">Lead (Activity Name)</label>
-                        <textarea name="plan" value={formData.plan} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none resize-none h-20" placeholder="Activity name..." />
+                        <textarea name="lead" value={formData.lead} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none resize-none h-20" placeholder="Activity name..." />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -243,8 +243,8 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-gray-500 uppercase">Status</label>
                             <StatusDropdown
-                                value={formData.realWeek1}
-                                onChange={(val) => setFormData(prev => ({ ...prev, realWeek1: val }))}
+                                value={formData.status}
+                                onChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
                             />
                         </div>
                         <div className="space-y-1">

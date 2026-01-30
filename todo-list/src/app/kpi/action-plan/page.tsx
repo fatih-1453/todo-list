@@ -38,7 +38,7 @@ export default function ActionPlanPage() {
         if (!plans) return []
         return plans.filter((p) => {
             const matchesSearch = !search ||
-                (p.plan?.toLowerCase().includes(search.toLowerCase()) ||
+                (p.lead?.toLowerCase().includes(search.toLowerCase()) ||
                     p.pic?.toLowerCase().includes(search.toLowerCase()) ||
                     p.program?.toLowerCase().includes(search.toLowerCase()))
 
@@ -69,11 +69,11 @@ export default function ActionPlanPage() {
             "Divisi", "Div Pelaksana", "Klasifikasi"
         ]
         const rows = filteredPlans.map((p, i) => [
-            i + 1, p.pic, p.plan, p.program, p.notes, p.indikator, p.lokasi,
+            i + 1, p.pic, p.lead, p.program, p.notes, p.indikator, p.lokasi,
             p.startDate ? format(new Date(p.startDate), 'yyyy-MM-dd') : '',
             p.endDate ? format(new Date(p.endDate), 'yyyy-MM-dd') : '',
-            p.targetActivity, p.realActivity, p.realWeek1, p.targetReceiver,
-            p.goal, p.position, p.subdivisi, p.div, p.executingAgency, p.classification
+            p.targetActivity, p.realActivity, p.status, p.targetReceiver,
+            p.goal, p.position, p.subdivisi, p.divisi, p.executingAgency, p.classification
         ])
 
         const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
@@ -84,8 +84,8 @@ export default function ActionPlanPage() {
 
     const handleDownloadTemplate = () => {
         const headers = [
-            "Nama", "Plan (Lead)", "Program", "Catatan", "Indikator", "Lokasi",
-            "Start Date (YYYY-MM-DD)", "End Date (YYYY-MM-DD)", "Target Kegiatan",
+            "Nama", "Lead", "Program", "Catatan", "Indikator", "Lokasi",
+            "Start Date (YYYY-MM-DD)", "End Date (YYYY-MM-DD)", "Target Kegiatan", "Realisasi Kegiatan", "Status",
             "Target Penerima", "Tujuan", "Jabatan", "Subdivisi", "Divisi",
             "Div Pelaksana", "Klasifikasi"
         ]
@@ -101,7 +101,7 @@ export default function ActionPlanPage() {
             const samples = [
                 {
                     pic: "Mochammad Sukamto",
-                    plan: "Seleksi Rekrutmen",
+                    lead: "Seleksi Rekrutmen",
                     program: "Program Rekrutmen Karyawan Baru",
                     notes: "Melakukan proses seleksi administratif & wawancara",
                     indikator: "Terpenuhinya kebutuhan",
@@ -110,12 +110,12 @@ export default function ActionPlanPage() {
                     endDate: new Date(new Date().setDate(new Date().getDate() + 4)).toISOString(),
                     targetActivity: 4,
                     realActivity: 4,
-                    realWeek1: "Done",
+                    status: "Done",
                     targetReceiver: "Operasional",
                     goal: "MANAJER",
                     position: "HRD",
                     subdivisi: "HRD",
-                    div: "HRD",
+                    divisi: "HRD",
                     executingAgency: "Ramadhan",
                     classification: "General"
                 }
@@ -134,7 +134,7 @@ export default function ActionPlanPage() {
     })
 
     const handleUpdateStatus = (id: number, status: string) => {
-        updatePlanMutation.mutate({ id, data: { realWeek1: status } })
+        updatePlanMutation.mutate({ id, data: { status: status } })
     }
 
     const handleUpdateRealActivity = (id: number, value: string) => {
@@ -219,7 +219,7 @@ export default function ActionPlanPage() {
                                 <tr key={p.id} className="hover:bg-blue-50/50 group transition-colors">
                                     <td className="px-3 py-2 text-center text-gray-500 border-r border-gray-100">{idx + 1}</td>
                                     <td className="px-3 py-2 font-medium text-gray-900 border-r border-gray-100 whitespace-nowrap">{p.pic}</td>
-                                    <td className="px-3 py-2 text-gray-800 border-r border-gray-100 font-medium whitespace-nowrap">{p.plan}</td>
+                                    <td className="px-3 py-2 text-gray-800 border-r border-gray-100 font-medium whitespace-nowrap">{p.lead}</td>
                                     <td className="px-3 py-2 text-gray-600 border-r border-gray-100 max-w-xs truncate" title={p.program}>{p.program}</td>
                                     <td className="px-3 py-2 text-gray-600 border-r border-gray-100 max-w-xs truncate" title={p.notes}>{p.notes}</td>
 
@@ -247,12 +247,12 @@ export default function ActionPlanPage() {
                                     {/* Status (Dropdown) */}
                                     <td className="px-0 py-0 border-r border-gray-100 bg-transparent">
                                         <select
-                                            className={`w-full h-full px-2 py-2 text-[10px] font-medium uppercase bg-transparent focus:outline-none cursor-pointer ${p.realWeek1?.toLowerCase() === 'done' ? 'text-emerald-700' :
-                                                    p.realWeek1?.toLowerCase() === 'on progres' ? 'text-amber-700' :
-                                                        p.realWeek1?.toLowerCase() === 'cancel' ? 'text-red-700' :
-                                                            'text-gray-500'
+                                            className={`w-full h-full px-2 py-2 text-[10px] font-medium uppercase bg-transparent focus:outline-none cursor-pointer ${p.status?.toLowerCase() === 'done' ? 'text-emerald-700' :
+                                                p.status?.toLowerCase() === 'on progres' ? 'text-amber-700' :
+                                                    p.status?.toLowerCase() === 'cancel' ? 'text-red-700' :
+                                                        'text-gray-500'
                                                 }`}
-                                            value={p.realWeek1 || 'Pending'}
+                                            value={p.status || 'Pending'}
                                             onChange={(e) => handleUpdateStatus(p.id, e.target.value)}
                                         >
                                             <option value="Pending">Pending</option>
@@ -267,7 +267,7 @@ export default function ActionPlanPage() {
                                     <td className="px-3 py-2 text-gray-600 border-r border-gray-100 uppercase text-[10px] font-semibold">{p.goal}</td>
                                     <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.position}</td>
                                     <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.subdivisi}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.div}</td>
+                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.divisi}</td>
                                     <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.executingAgency}</td>
                                     <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.classification}</td>
                                 </tr>
