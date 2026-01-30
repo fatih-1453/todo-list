@@ -31,21 +31,7 @@ export default function ActionPlanPage() {
     const [selectedPic, setSelectedPic] = React.useState<string>("all")
     const [selectedProgram, setSelectedProgram] = React.useState<string>("all")
 
-    // Extract Unique Filter Values
-    const uniqueFilters = React.useMemo(() => {
-        // Return empty arrays if plans is undefined
-        if (!plans) return { divisi: [], pic: [], program: [] }
 
-        const divisi = Array.from(new Set(plans.map(p => p.divisi).filter(Boolean))) as string[]
-        const pic = Array.from(new Set(plans.map(p => p.pic).filter(Boolean))) as string[]
-        const program = Array.from(new Set(plans.map(p => p.program).filter(Boolean))) as string[]
-
-        return {
-            divisi: divisi.sort(),
-            pic: pic.sort(),
-            program: program.sort()
-        }
-    }, [plans])
 
     // Date Filter State
     const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString())
@@ -78,6 +64,22 @@ export default function ActionPlanPage() {
         queryKey: ['actionPlans'],
         queryFn: () => apiClient.get<ActionPlan[]>('/action-plans'),
     })
+
+    // Extract Unique Filter Values
+    const uniqueFilters = React.useMemo(() => {
+        // Return empty arrays if plans is undefined
+        if (!plans) return { divisi: [], pic: [], program: [] }
+
+        const divisi = Array.from(new Set(plans.map(p => p.divisi).filter(Boolean))) as string[]
+        const pic = Array.from(new Set(plans.map(p => p.pic).filter(Boolean))) as string[]
+        const program = Array.from(new Set(plans.map(p => p.program).filter(Boolean))) as string[]
+
+        return {
+            divisi: divisi.sort(),
+            pic: pic.sort(),
+            program: program.sort()
+        }
+    }, [plans])
 
     // Filter & Sort Logic
     const sortedAndFilteredPlans = React.useMemo(() => {
