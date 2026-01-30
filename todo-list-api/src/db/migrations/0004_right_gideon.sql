@@ -1,6 +1,9 @@
+UPDATE "action_plans" SET "lead" = "plan" WHERE "lead" IS NULL;--> statement-breakpoint
 ALTER TABLE "action_plans" ALTER COLUMN "lead" SET NOT NULL;--> statement-breakpoint
 ALTER TABLE "action_plans" ADD COLUMN "divisi" text;--> statement-breakpoint
+UPDATE "action_plans" SET "divisi" = "div" WHERE "divisi" IS NULL;--> statement-breakpoint
 ALTER TABLE "action_plans" ADD COLUMN "status" text;--> statement-breakpoint
+UPDATE "action_plans" SET "status" = "real_week_1" WHERE "status" IS NULL;--> statement-breakpoint
 ALTER TABLE "action_plans" DROP COLUMN "div";--> statement-breakpoint
 ALTER TABLE "action_plans" DROP COLUMN "wig";--> statement-breakpoint
 ALTER TABLE "action_plans" DROP COLUMN "lag";--> statement-breakpoint
