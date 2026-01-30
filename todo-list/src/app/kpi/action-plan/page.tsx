@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Download, Upload, Plus, RefreshCcw, FileSpreadsheet, File, Trash2, Edit } from "lucide-react"
+import { Search, Download, Upload, Plus, RefreshCcw, FileSpreadsheet, File, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
 import { UploadActionPlanModal } from "@/components/action-plan/UploadActionPlanModal"
@@ -12,6 +12,13 @@ import { DateRange } from "react-day-picker"
 import { startOfMonth, endOfMonth, format, isSameDay } from "date-fns"
 import { ActionPlan } from "@/types/action-plan"
 import { toast } from "sonner"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 export default function ActionPlanPage() {
     const queryClient = useQueryClient()
@@ -19,15 +26,32 @@ export default function ActionPlanPage() {
     const [isCreateOpen, setIsCreateOpen] = React.useState(false)
     const [editingPlan, setEditingPlan] = React.useState<ActionPlan | null>(null)
     const [search, setSearch] = React.useState("")
+
+    // Date Filter State
+    const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString())
+    const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString())
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>()
+
     const [selectedIds, setSelectedIds] = React.useState<number[]>([])
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = React.useState(1)
+    const [pageSize, setPageSize] = React.useState<number | 'all'>(50)
+
+    // Sync Dropdowns to DateRange
     React.useEffect(() => {
-        setDateRange({
-            from: startOfMonth(new Date()),
-            to: endOfMonth(new Date()),
-        })
-    }, [])
+        if (selectedYear && selectedMonth && selectedYear !== 'all' && selectedMonth !== 'all') {
+            const year = parseInt(selectedYear)
+            const month = parseInt(selectedMonth) - 1
+            setDateRange({
+                from: startOfMonth(new Date(year, month)),
+                to: endOfMonth(new Date(year, month)),
+            })
+        } else if (selectedYear === 'all' || selectedMonth === 'all') {
+            setDateRange(undefined)
+        }
+        setCurrentPage(1) // Reset page on filter change
+    }, [selectedYear, selectedMonth])
 
     // Fetch Plans
     const { data: plans, isLoading } = useQuery({
@@ -35,10 +59,11 @@ export default function ActionPlanPage() {
         queryFn: () => apiClient.get<ActionPlan[]>('/action-plans'),
     })
 
-    // Filter Logic
-    const filteredPlans = React.useMemo(() => {
+    // Filter & Sort Logic
+    const sortedAndFilteredPlans = React.useMemo(() => {
         if (!plans) return []
-        return plans.filter((p) => {
+
+        let result = plans.filter((p) => {
             const matchesSearch = !search ||
                 (p.lead?.toLowerCase().includes(search.toLowerCase()) ||
                     p.pic?.toLowerCase().includes(search.toLowerCase()) ||
@@ -59,14 +84,40 @@ export default function ActionPlanPage() {
             }
             return matchesSearch && matchesDate
         })
+
+        // Sort: Priority to "Today" (closest date to today)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        result.sort((a, b) => {
+            const dateA = a.startDate ? new Date(a.startDate) : new Date(0)
+            const dateB = b.startDate ? new Date(b.startDate) : new Date(0)
+
+            // Distance in milliseconds
+            const distA = Math.abs(dateA.getTime() - today.getTime())
+            const distB = Math.abs(dateB.getTime() - today.getTime())
+
+            return distA - distB
+        })
+
+        return result
     }, [plans, search, dateRange])
+
+    // Pagination Logic
+    const paginatedPlans = React.useMemo(() => {
+        if (pageSize === 'all') return sortedAndFilteredPlans
+        const start = (currentPage - 1) * pageSize
+        return sortedAndFilteredPlans.slice(start, start + pageSize)
+    }, [sortedAndFilteredPlans, currentPage, pageSize])
+
+    const totalPages = pageSize === 'all' ? 1 : Math.ceil(sortedAndFilteredPlans.length / pageSize)
 
     // Selection Logic
     const toggleSelectAll = () => {
-        if (selectedIds.length === filteredPlans.length) {
+        if (selectedIds.length === sortedAndFilteredPlans.length) {
             setSelectedIds([])
         } else {
-            setSelectedIds(filteredPlans.map(p => p.id))
+            setSelectedIds(sortedAndFilteredPlans.map(p => p.id))
         }
     }
 
@@ -103,7 +154,7 @@ export default function ActionPlanPage() {
             "Status", "Target Penerima", "Tujuan", "Jabatan", "Subdivisi",
             "Divisi", "Div Pelaksana", "Klasifikasi"
         ]
-        const rows = filteredPlans.map((p, i) => [
+        const rows = sortedAndFilteredPlans.map((p, i) => [
             i + 1, p.pic, p.lead, p.program, p.notes, p.indikator, p.lokasi,
             p.startDate ? format(new Date(p.startDate), 'yyyy-MM-dd') : '',
             p.endDate ? format(new Date(p.endDate), 'yyyy-MM-dd') : '',
@@ -184,6 +235,12 @@ export default function ActionPlanPage() {
         setIsCreateOpen(true)
     }
 
+    // Check if date is today
+    const isToday = (dateStr?: string | Date) => {
+        if (!dateStr) return false
+        return isSameDay(new Date(dateStr), new Date())
+    }
+
     return (
         <div className="h-screen flex flex-col bg-white overflow-hidden">
             {/* Toolbar */}
@@ -246,6 +303,39 @@ export default function ActionPlanPage() {
                     />
                 </div>
                 <div className="h-6 w-px bg-gray-200" />
+
+                {/* Month/Year Filters */}
+                <div className="flex items-center gap-2">
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger className="w-[110px] h-8 text-xs">
+                            <SelectValue placeholder="Month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Months</SelectItem>
+                            {Array.from({ length: 12 }, (_, i) => (
+                                <SelectItem key={i} value={(i + 1).toString()}>
+                                    {format(new Date(0, i), 'MMMM')}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger className="w-[80px] h-8 text-xs">
+                            <SelectValue placeholder="Year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Years</SelectItem>
+                            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
+                                <SelectItem key={year} value={year.toString()}>
+                                    {year}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="h-6 w-px bg-gray-200" />
                 <DatePickerWithRange date={dateRange} setDate={setDateRange} className="h-8 text-xs" />
             </div>
 
@@ -258,7 +348,7 @@ export default function ActionPlanPage() {
                                 <input
                                     type="checkbox"
                                     className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                    checked={filteredPlans.length > 0 && selectedIds.length === filteredPlans.length}
+                                    checked={sortedAndFilteredPlans.length > 0 && selectedIds.length === sortedAndFilteredPlans.length}
                                     onChange={toggleSelectAll}
                                 />
                             </th>
@@ -279,97 +369,144 @@ export default function ActionPlanPage() {
                     <tbody className="divide-y divide-gray-100">
                         {isLoading ? (
                             <tr><td colSpan={21} className="p-10 text-center text-gray-500">Loading data...</td></tr>
-                        ) : filteredPlans.length === 0 ? (
+                        ) : paginatedPlans.length === 0 ? (
                             <tr><td colSpan={21} className="p-10 text-center text-gray-500">No action plans found.</td></tr>
                         ) : (
-                            filteredPlans.map((p, idx) => (
-                                <tr key={p.id} className={`hover:bg-blue-50/50 group transition-colors ${selectedIds.includes(p.id) ? 'bg-blue-50' : ''}`}>
-                                    <td className="px-3 py-2 text-center border-r border-gray-100">
-                                        <input
-                                            type="checkbox"
-                                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                            checked={selectedIds.includes(p.id)}
-                                            onChange={() => toggleSelect(p.id)}
-                                        />
-                                    </td>
-                                    <td className="px-2 py-2 border-r border-gray-100">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <button
-                                                onClick={() => handleUpdate(p)}
-                                                className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                                title="Edit"
+                            paginatedPlans.map((p, idx) => {
+                                const isRowToday = isToday(p.startDate)
+                                const globalIndex = pageSize === 'all' ? idx + 1 : (currentPage - 1) * pageSize + idx + 1
+                                return (
+                                    <tr key={p.id} className={`hover:bg-blue-50/50 group transition-colors ${selectedIds.includes(p.id) ? 'bg-blue-50' : isRowToday ? 'bg-yellow-100/60 border-l-4 border-l-yellow-500' : ''}`}>
+                                        <td className="px-3 py-2 text-center border-r border-gray-100">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                checked={selectedIds.includes(p.id)}
+                                                onChange={() => toggleSelect(p.id)}
+                                            />
+                                        </td>
+                                        <td className="px-2 py-2 border-r border-gray-100">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button
+                                                    onClick={() => handleUpdate(p)}
+                                                    className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Edit className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm('Delete this plan?')) deleteMutation.mutate(p.id)
+                                                    }}
+                                                    className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td className="px-3 py-2 text-center text-gray-500 border-r border-gray-100">{globalIndex}</td>
+                                        <td className="px-3 py-2 font-medium text-gray-900 border-r border-gray-100 whitespace-nowrap">{p.pic}</td>
+                                        <td className="px-3 py-2 text-gray-800 border-r border-gray-100 font-medium whitespace-nowrap">{p.lead}</td>
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 max-w-xs truncate" title={p.program}>{p.program}</td>
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 max-w-xs truncate" title={p.notes}>{p.notes}</td>
+
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 truncate">{p.indikator}</td>
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100">{p.lokasi}</td>
+                                        <td className={`px-3 py-2 border-r border-gray-100 w-24 whitespace-nowrap ${isRowToday ? 'font-bold text-yellow-800' : 'text-gray-600'}`}>
+                                            {p.startDate ? format(new Date(p.startDate), 'MMM dd, yyyy') : '-'}
+                                        </td>
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 w-24 whitespace-nowrap">
+                                            {p.endDate ? format(new Date(p.endDate), 'MMM dd, yyyy') : '-'}
+                                        </td>
+
+                                        <td className="px-3 py-2 text-center font-semibold text-indigo-600 border-r border-gray-100">{p.targetActivity}</td>
+
+                                        {/* Realisasi Kegiatan (Editable) */}
+                                        <td className="px-0 py-0 text-center text-gray-700 border-r border-gray-100">
+                                            <input
+                                                type="number"
+                                                className="w-full h-full px-2 py-2 bg-transparent text-center focus:outline-none focus:bg-indigo-50 transition-colors"
+                                                defaultValue={p.realActivity || 0}
+                                                onBlur={(e) => handleUpdateRealActivity(p.id, e.target.value)}
+                                            />
+                                        </td>
+
+                                        {/* Status (Dropdown) */}
+                                        <td className="px-0 py-0 border-r border-gray-100 bg-transparent">
+                                            <select
+                                                className={`w-full h-full px-2 py-2 text-[10px] font-medium uppercase bg-transparent focus:outline-none cursor-pointer ${p.status?.toLowerCase() === 'done' ? 'text-emerald-700' :
+                                                    p.status?.toLowerCase() === 'on progres' ? 'text-amber-700' :
+                                                        p.status?.toLowerCase() === 'cancel' ? 'text-red-700' :
+                                                            'text-gray-500'
+                                                    }`}
+                                                value={p.status || 'Pending'}
+                                                onChange={(e) => handleUpdateStatus(p.id, e.target.value)}
                                             >
-                                                <Edit className="w-3.5 h-3.5" />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    if (confirm('Delete this plan?')) deleteMutation.mutate(p.id)
-                                                }}
-                                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                                title="Delete"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                    <td className="px-3 py-2 text-center text-gray-500 border-r border-gray-100">{idx + 1}</td>
-                                    <td className="px-3 py-2 font-medium text-gray-900 border-r border-gray-100 whitespace-nowrap">{p.pic}</td>
-                                    <td className="px-3 py-2 text-gray-800 border-r border-gray-100 font-medium whitespace-nowrap">{p.lead}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 max-w-xs truncate" title={p.program}>{p.program}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 max-w-xs truncate" title={p.notes}>{p.notes}</td>
+                                                <option value="Pending">Pending</option>
+                                                <option value="Cancel">Cancel</option>
+                                                <option value="Progres">Progres</option>
+                                                <option value="On Progres">On Progres</option>
+                                                <option value="Done">Done</option>
+                                            </select>
+                                        </td>
 
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 truncate">{p.indikator}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100">{p.lokasi}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 w-24 whitespace-nowrap">
-                                        {p.startDate ? format(new Date(p.startDate), 'MMM dd, yyyy') : '-'}
-                                    </td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 w-24 whitespace-nowrap">
-                                        {p.endDate ? format(new Date(p.endDate), 'MMM dd, yyyy') : '-'}
-                                    </td>
-
-                                    <td className="px-3 py-2 text-center font-semibold text-indigo-600 border-r border-gray-100">{p.targetActivity}</td>
-
-                                    {/* Realisasi Kegiatan (Editable) */}
-                                    <td className="px-0 py-0 text-center text-gray-700 border-r border-gray-100">
-                                        <input
-                                            type="number"
-                                            className="w-full h-full px-2 py-2 bg-transparent text-center focus:outline-none focus:bg-indigo-50 transition-colors"
-                                            defaultValue={p.realActivity || 0}
-                                            onBlur={(e) => handleUpdateRealActivity(p.id, e.target.value)}
-                                        />
-                                    </td>
-
-                                    {/* Status (Dropdown) */}
-                                    <td className="px-0 py-0 border-r border-gray-100 bg-transparent">
-                                        <select
-                                            className={`w-full h-full px-2 py-2 text-[10px] font-medium uppercase bg-transparent focus:outline-none cursor-pointer ${p.status?.toLowerCase() === 'done' ? 'text-emerald-700' :
-                                                p.status?.toLowerCase() === 'on progres' ? 'text-amber-700' :
-                                                    p.status?.toLowerCase() === 'cancel' ? 'text-red-700' :
-                                                        'text-gray-500'
-                                                }`}
-                                            value={p.status || 'Pending'}
-                                            onChange={(e) => handleUpdateStatus(p.id, e.target.value)}
-                                        >
-                                            <option value="Pending">Pending</option>
-                                            <option value="Cancel">Cancel</option>
-                                            <option value="Progres">Progres</option>
-                                            <option value="On Progres">On Progres</option>
-                                            <option value="Done">Done</option>
-                                        </select>
-                                    </td>
-
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.targetReceiver}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 uppercase text-[10px] font-semibold">{p.goal}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.position}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.subdivisi}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.divisi}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.executingAgency}</td>
-                                    <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.classification}</td>
-                                </tr>
-                            ))
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.targetReceiver}</td>
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 uppercase text-[10px] font-semibold">{p.goal}</td>
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.position}</td>
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.subdivisi}</td>
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.divisi}</td>
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.executingAgency}</td>
+                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.classification}</td>
+                                    </tr>
+                                )
+                            })
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Pagination Footer */}
+            <div className="px-4 py-2 border-t border-gray-200 bg-gray-50 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                    <span className="text-gray-600">Rows per page:</span>
+                    <Select value={pageSize.toString()} onValueChange={(v) => {
+                        setPageSize(v === 'all' ? 'all' : Number(v))
+                        setCurrentPage(1)
+                    }}>
+                        <SelectTrigger className="w-[70px] h-7 text-xs">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                            <SelectItem value="all">All</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <span className="text-gray-500 ml-2">
+                        Total {sortedAndFilteredPlans.length} items
+                    </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-gray-600 mr-2">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
 
             <UploadActionPlanModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
