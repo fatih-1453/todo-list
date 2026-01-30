@@ -26,6 +26,26 @@ export default function ActionPlanPage() {
     const [isCreateOpen, setIsCreateOpen] = React.useState(false)
     const [editingPlan, setEditingPlan] = React.useState<ActionPlan | null>(null)
     const [search, setSearch] = React.useState("")
+    // New Filter States
+    const [selectedDivisi, setSelectedDivisi] = React.useState<string>("all")
+    const [selectedPic, setSelectedPic] = React.useState<string>("all")
+    const [selectedProgram, setSelectedProgram] = React.useState<string>("all")
+
+    // Extract Unique Filter Values
+    const uniqueFilters = React.useMemo(() => {
+        // Return empty arrays if plans is undefined
+        if (!plans) return { divisi: [], pic: [], program: [] }
+
+        const divisi = Array.from(new Set(plans.map(p => p.divisi).filter(Boolean))) as string[]
+        const pic = Array.from(new Set(plans.map(p => p.pic).filter(Boolean))) as string[]
+        const program = Array.from(new Set(plans.map(p => p.program).filter(Boolean))) as string[]
+
+        return {
+            divisi: divisi.sort(),
+            pic: pic.sort(),
+            program: program.sort()
+        }
+    }, [plans])
 
     // Date Filter State
     const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString())
@@ -64,11 +84,15 @@ export default function ActionPlanPage() {
         if (!plans) return []
 
         let result = plans.filter((p) => {
+            // Updated Filter Logic: Strict Match for Dropdowns
+            const matchesDivisi = selectedDivisi === "all" || p.divisi === selectedDivisi
+            const matchesPic = selectedPic === "all" || p.pic === selectedPic
+            const matchesProgram = selectedProgram === "all" || p.program === selectedProgram
+
+            // Generic Search (still useful for other fields like Lead or specific text in notes)
             const matchesSearch = !search ||
                 (p.lead?.toLowerCase().includes(search.toLowerCase()) ||
-                    p.pic?.toLowerCase().includes(search.toLowerCase()) || // pic represents "Nama"
-                    p.program?.toLowerCase().includes(search.toLowerCase()) ||
-                    p.divisi?.toLowerCase().includes(search.toLowerCase())) // added divisi
+                    p.notes?.toLowerCase().includes(search.toLowerCase()))
 
             let matchesDate = true
             if (dateRange?.from && p.startDate) {
@@ -83,7 +107,7 @@ export default function ActionPlanPage() {
                     matchesDate = planDate >= start
                 }
             }
-            return matchesSearch && matchesDate
+            return matchesDivisi && matchesPic && matchesProgram && matchesSearch && matchesDate
         })
 
         // Sort Logic: Stable & Predictable
@@ -117,7 +141,7 @@ export default function ActionPlanPage() {
         })
 
         return result
-    }, [plans, search, dateRange])
+    }, [plans, search, dateRange, selectedDivisi, selectedPic, selectedProgram])
 
     // Pagination Logic
     const paginatedPlans = React.useMemo(() => {
@@ -360,76 +384,149 @@ export default function ActionPlanPage() {
             </div>
 
             {/* Toolbar & Filter - Stacked in a nice card */}
-            <div className="mx-4 mb-4 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-between p-2 gap-2">
-                {/* Search */}
-                <div className="relative w-full md:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search action plans..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all outline-none"
-                    />
-                </div>
+            <div className="mx-4 mb-4 bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
 
-                <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 hide-scrollbar">
-                    {/* Month/Year Selectors */}
-                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                        <SelectTrigger className="w-[120px] h-9 border-none bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg text-xs font-medium">
-                            <SelectValue placeholder="Month" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Months</SelectItem>
-                            {Array.from({ length: 12 }, (_, i) => (
-                                <SelectItem key={i} value={(i + 1).toString()}>
-                                    {format(new Date(0, i), 'MMMM')}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    {/* Filter Group: Modern Dropdowns */}
+                    <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
 
-                    <Select value={selectedYear} onValueChange={setSelectedYear}>
-                        <SelectTrigger className="w-[90px] h-9 border-none bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg text-xs font-medium">
-                            <SelectValue placeholder="Year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Years</SelectItem>
-                            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
-                                <SelectItem key={year} value={year.toString()}>
-                                    {year}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-
-                    <div className="h-6 w-px bg-gray-200 mx-1" />
-
-                    {/* Action Buttons */}
-                    {selectedIds.length > 0 ? (
-                        <button
-                            onClick={() => {
-                                if (confirm(`Delete ${selectedIds.length} items?`)) {
-                                    bulkDeleteMutation.mutate(selectedIds)
-                                }
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors animate-in fade-in"
-                        >
-                            <Trash2 className="w-4 h-4" /> Delete ({selectedIds.length})
-                        </button>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <button onClick={handleDownloadData} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Export Excel">
-                                <Download className="w-5 h-5" />
-                            </button>
-                            <button onClick={() => setIsUploadOpen(true)} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Import Excel">
-                                <Upload className="w-5 h-5" />
-                            </button>
-                            <button onClick={() => { setEditingPlan(null); setIsCreateOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-all hover:scale-105 active:scale-95">
-                                <Plus className="w-4 h-4" /> New Plan
-                            </button>
+                        {/* Division Dropdown */}
+                        <div className="relative min-w-[160px]">
+                            <Select value={selectedDivisi} onValueChange={setSelectedDivisi}>
+                                <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 rounded-full text-xs font-medium backdrop-blur-sm focus:ring-indigo-500 transition-all hover:bg-gray-100 hover:border-indigo-200">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Divisi:</span>
+                                        <SelectValue placeholder="All" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Divisions</SelectItem>
+                                    {uniqueFilters.divisi.length > 0 && <div className="h-px bg-gray-100 my-1" />}
+                                    {uniqueFilters.divisi.map((div, i) => (
+                                        <SelectItem key={i} value={div}>{div}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
-                    )}
+
+                        {/* Name (PIC) Dropdown */}
+                        <div className="relative min-w-[160px]">
+                            <Select value={selectedPic} onValueChange={setSelectedPic}>
+                                <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 rounded-full text-xs font-medium backdrop-blur-sm focus:ring-indigo-500 transition-all hover:bg-gray-100 hover:border-indigo-200">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Name:</span>
+                                        <SelectValue placeholder="All" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[300px]">
+                                    <SelectItem value="all">All Names</SelectItem>
+                                    {uniqueFilters.pic.length > 0 && <div className="h-px bg-gray-100 my-1" />}
+                                    {uniqueFilters.pic.map((p, i) => (
+                                        <SelectItem key={i} value={p}>{p}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Program Dropdown */}
+                        <div className="relative min-w-[160px]">
+                            <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                                <SelectTrigger className="h-10 bg-gray-50/50 border-gray-200 rounded-full text-xs font-medium backdrop-blur-sm focus:ring-indigo-500 transition-all hover:bg-gray-100 hover:border-indigo-200">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Prog:</span>
+                                        <SelectValue placeholder="All" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[300px]">
+                                    <SelectItem value="all">All Programs</SelectItem>
+                                    {uniqueFilters.program.length > 0 && <div className="h-px bg-gray-100 my-1" />}
+                                    {uniqueFilters.program.map((p, i) => (
+                                        <SelectItem key={i} value={p}>{p}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Search Bar - Retained for generic search */}
+                        <div className="relative w-full md:w-48">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search other..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full pl-9 pr-4 h-10 text-xs bg-gray-50/50 border border-gray-200 rounded-full focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all outline-none"
+                            />
+                        </div>
+
+                        {/* Clear Filters Button */}
+                        {(selectedDivisi !== 'all' || selectedPic !== 'all' || selectedProgram !== 'all' || search) && (
+                            <button
+                                onClick={() => { setSelectedDivisi('all'); setSelectedPic('all'); setSelectedProgram('all'); setSearch(''); }}
+                                className="px-3 py-1 text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors flex items-center gap-1"
+                            >
+                                <Trash2 className="w-3 h-3" /> Reset
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Right Side: Date Actions & Grid Controls */}
+                    <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-end">
+                        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                            <SelectTrigger className="w-[110px] h-9 border-none bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg text-xs font-medium">
+                                <SelectValue placeholder="Month" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Months</SelectItem>
+                                {Array.from({ length: 12 }, (_, i) => (
+                                    <SelectItem key={i} value={(i + 1).toString()}>
+                                        {format(new Date(0, i), 'MMMM')}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={selectedYear} onValueChange={setSelectedYear}>
+                            <SelectTrigger className="w-[80px] h-9 border-none bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg text-xs font-medium">
+                                <SelectValue placeholder="Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Years</SelectItem>
+                                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
+                                    <SelectItem key={year} value={year.toString()}>
+                                        {year}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <div className="h-6 w-px bg-gray-200 mx-1 hidden md:block" />
+
+                        {selectedIds.length > 0 ? (
+                            <button
+                                onClick={() => {
+                                    if (confirm(`Delete ${selectedIds.length} items?`)) {
+                                        bulkDeleteMutation.mutate(selectedIds)
+                                    }
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors animate-in fade-in"
+                            >
+                                <Trash2 className="w-4 h-4" /> Delete ({selectedIds.length})
+                            </button>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <button onClick={handleDownloadData} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Export Excel">
+                                    <Download className="w-5 h-5" />
+                                </button>
+                                <button onClick={() => setIsUploadOpen(true)} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Import Excel">
+                                    <Upload className="w-5 h-5" />
+                                </button>
+                                <button onClick={() => { setEditingPlan(null); setIsCreateOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-all hover:scale-105 active:scale-95">
+                                    <Plus className="w-4 h-4" /> New Plan
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
