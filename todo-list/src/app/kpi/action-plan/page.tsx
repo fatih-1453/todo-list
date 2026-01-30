@@ -532,8 +532,8 @@ export default function ActionPlanPage() {
                 </div>
             </div>
 
-            {/* Modern Table Container */}
-            <div className="flex-1 overflow-auto mx-4 mb-4 bg-white rounded-xl border border-gray-200 shadow-sm relative">
+            {/* Desktop Table View */}
+            <div className="hidden md:block flex-1 overflow-auto mx-4 mb-4 bg-white rounded-xl border border-gray-200 shadow-sm relative">
                 <table className="min-w-max w-full border-collapse text-xs">
                     <thead className="sticky top-0 z-20 backdrop-blur-md bg-white/90 shadow-sm supports-[backdrop-filter]:bg-white/60">
                         <tr>
@@ -649,6 +649,65 @@ export default function ActionPlanPage() {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="block md:hidden flex-1 overflow-auto px-4 pb-20 space-y-4">
+                {paginatedPlans.map((p) => {
+                    const percent = Math.min(100, Math.round(((p.realActivity || 0) / (p.targetActivity || 1)) * 100))
+                    return (
+                        <div key={p.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-3">
+                            {/* Header: Action & Status */}
+                            <div className="flex justify-between items-start gap-3">
+                                <h3 className="font-bold text-gray-900 text-sm leading-tight">{p.lead}</h3>
+                                <span className={`px-2 py-1 rounded-full text-[10px] uppercase font-bold tracking-wide whitespace-nowrap ${getStatusColor(p.status || 'Pending')}`}>
+                                    {p.status || 'Pending'}
+                                </span>
+                            </div>
+
+                            {/* Sub-Header: PIC & Division */}
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <span className="font-medium text-gray-700 bg-gray-50 px-2 py-0.5 rounded-md">{p.pic}</span>
+                                <span>•</span>
+                                <span className="text-indigo-600 font-medium">{p.divisi}</span>
+                            </div>
+
+                            {/* Dates */}
+                            <div className="flex items-center gap-4 text-xs text-gray-400 bg-gray-50/50 p-2 rounded-lg">
+                                <div>
+                                    <span className="block text-[10px] uppercase font-bold text-gray-300">Start</span>
+                                    <span className="font-medium text-gray-600">{p.startDate ? format(new Date(p.startDate), 'd MMM') : '-'}</span>
+                                </div>
+                                <div className="w-px h-6 bg-gray-200" />
+                                <div>
+                                    <span className="block text-[10px] uppercase font-bold text-gray-300">Due</span>
+                                    <span className="font-medium text-gray-600">{p.endDate ? format(new Date(p.endDate), 'd MMM') : '-'}</span>
+                                </div>
+                            </div>
+
+                            {/* Progress */}
+                            <div>
+                                <div className="flex justify-between text-[10px] mb-1">
+                                    <span className="font-semibold text-gray-500">Progress</span>
+                                    <span className="font-bold text-indigo-600">{percent}%</span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                    <div className={`h-full rounded-full ${percent === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${percent}%` }} />
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-2 pt-2 border-t border-gray-50">
+                                <button onClick={() => handleUpdate(p)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-colors">
+                                    <Edit className="w-3.5 h-3.5" /> Edit
+                                </button>
+                                <button onClick={() => { if (confirm('Delete?')) deleteMutation.mutate(p.id) }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors">
+                                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                                </button>
+                            </div>
+                        </div>
+                    )
+                })}
             </div>
 
             {/* Pagination */}

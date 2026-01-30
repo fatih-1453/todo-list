@@ -17,20 +17,7 @@ import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import { startOfMonth, endOfMonth } from "date-fns"
 
-// Types matching ActionPlan schema
-interface ActionPlan {
-    id: number
-    plan: string
-    div?: string
-    dueDate?: string
-    startDate?: string
-    createdAt?: string
-    realWeek1?: string
-    targetNominal?: number | string
-    realNominal?: number | string
-    department?: string
-    pic?: string
-}
+import { ActionPlan } from "@/types/action-plan"
 
 // Animation Variants
 const containerVariants = {
@@ -78,8 +65,8 @@ export default function DashboardPage() {
             if (searchQuery) {
                 const lowerQuery = searchQuery.toLowerCase()
                 matchesSearch = (
-                    p.plan?.toLowerCase().includes(lowerQuery) ||
-                    p.div?.toLowerCase().includes(lowerQuery) ||
+                    p.lead.toLowerCase().includes(lowerQuery) ||
+                    p.divisi?.toLowerCase().includes(lowerQuery) ||
                     p.pic?.toLowerCase().includes(lowerQuery) ||
                     p.department?.toLowerCase().includes(lowerQuery) || false
                 )
@@ -126,11 +113,11 @@ export default function DashboardPage() {
             totalTarget += tNominal
             totalRealization += rNominal
 
-            if ((p.realWeek1 && p.realWeek1.toLowerCase().includes('done')) || (tNominal > 0 && rNominal >= tNominal)) {
+            if ((p.status && p.status.toLowerCase().includes('done')) || (tNominal > 0 && rNominal >= tNominal)) {
                 isDone = true
                 completed++
                 statusDistribution[0].value++
-            } else if (rNominal > 0) {
+            } else if (rNominal > 0 || (p.status && p.status.toLowerCase().includes('on progress'))) {
                 inProgress++
                 statusDistribution[1].value++
             } else {
@@ -138,7 +125,7 @@ export default function DashboardPage() {
                 statusDistribution[2].value++
             }
 
-            const divName = p.div || "Unassigned"
+            const divName = p.divisi || "Unassigned"
             if (!departmentData[divName]) departmentData[divName] = { total: 0, completed: 0 }
             departmentData[divName].total++
             if (isDone) departmentData[divName].completed++
