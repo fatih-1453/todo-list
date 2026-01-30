@@ -122,102 +122,102 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
             // Data starts immediately after header in the new template
             const dataStartIndex = headerRowIndex + 1;
 
-            const processRow = (row: any[]) => {
-                const safeNum = (val: any) => {
-                    if (typeof val === 'string') val = val.replace(/,/g, '');
-                    const num = Number(val);
-                    return isNaN(num) ? 0 : num;
-                };
 
-                const parseDate = (val: any) => {
-                    if (!val) return undefined;
-                    if (typeof val === 'number') {
-                        return new Date(Math.round((val - 25569) * 86400 * 1000)).toISOString();
-                    }
-                    if (typeof val === 'string') {
-                        // Try YYYY-MM-DD
-                        if (val.match(/^\d{4}-\d{2}-\d{2}$/)) return new Date(val).toISOString();
-                        // Try DD/MM/YYYY
-                        if (val.includes('/')) {
-                            const parts = val.split('/');
-                            if (parts.length === 3) {
-                                return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).toISOString();
-                            }
+            const safeNum = (val: any) => {
+                if (typeof val === 'string') val = val.replace(/,/g, '');
+                const num = Number(val);
+                return isNaN(num) ? 0 : num;
+            };
+
+            const parseDate = (val: any) => {
+                if (!val) return undefined;
+                if (typeof val === 'number') {
+                    return new Date(Math.round((val - 25569) * 86400 * 1000)).toISOString();
+                }
+                if (typeof val === 'string') {
+                    // Try YYYY-MM-DD
+                    if (val.match(/^\d{4}-\d{2}-\d{2}$/)) return new Date(val).toISOString();
+                    // Try DD/MM/YYYY
+                    if (val.includes('/')) {
+                        const parts = val.split('/');
+                        if (parts.length === 3) {
+                            return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).toISOString();
                         }
                     }
-                    const d = new Date(val);
-                    return !isNaN(d.getTime()) ? d.toISOString() : undefined;
+                }
+                const d = new Date(val);
+                return !isNaN(d.getTime()) ? d.toISOString() : undefined;
+            };
+
+            // Dynamic Header Mapping
+            const headers = (jsonData[headerRowIndex] as string[]).map(h => String(h).toLowerCase().trim());
+
+            const getIdx = (keywords: string[]) => headers.findIndex(h => keywords.some(k => h.includes(k)));
+
+            const map = {
+                pic: getIdx(['nama', 'pic', 'person']),
+                plan: getIdx(['plan', 'lead', 'activity', 'kegiatan']),
+                program: getIdx(['program']),
+                notes: getIdx(['catatan', 'notes', 'keterangan']),
+                indikator: getIdx(['indikator']),
+                lokasi: getIdx(['lokasi', 'location']),
+                startDate: getIdx(['start', 'mulai']),
+                endDate: getIdx(['end', 'selesai']),
+                targetActivity: getIdx(['target kegiatan', 'target activity']),
+                targetReceiver: getIdx(['target penerima', 'receiver']),
+                goal: getIdx(['tujuan', 'goal']),
+                position: getIdx(['jabatan', 'position']),
+                subdivisi: getIdx(['subdivisi', 'subdivision']),
+                div: getIdx(['divisi', 'division']), // exclude 'div pelaksana' if possible or check order? 'divisi' usually matches 'divisi'
+                executingAgency: getIdx(['biro', 'pelaksana', 'agency']),
+                classification: getIdx(['klasifikasi', 'class']),
+                realActivity: getIdx(['realisasi kegiatan', 'real activity']),
+                realWeek1: getIdx(['status'])
+            };
+
+            // Correction: "divisi" might match "subdivisi" if we are not careful. 
+            // Better to use exact match or specific unique strings if possible, or order preference.
+            // But 'subdivisi' includes 'divisi'. 
+            // Let's refine:
+            const exactIdx = (key: string) => headers.indexOf(key);
+
+            // Helper to get cell value
+            const getVal = (row: any[], idx: number) => idx !== -1 ? row[idx] : undefined;
+
+            const processRow = (row: any[]) => {
+                if (!row || row.length === 0) return null;
+
+                return {
+                    pic: getVal(row, map.pic) || '',
+                    plan: getVal(row, map.plan) || 'No Plan',
+                    program: getVal(row, map.program) || '',
+                    notes: getVal(row, map.notes) || '',
+                    indikator: getVal(row, map.indikator) || '',
+                    lokasi: getVal(row, map.lokasi) || '',
+                    startDate: parseDate(getVal(row, map.startDate)),
+                    endDate: parseDate(getVal(row, map.endDate)),
+                    targetActivity: safeNum(getVal(row, map.targetActivity)),
+                    targetReceiver: getVal(row, map.targetReceiver) || '',
+                    goal: getVal(row, map.goal) || '',
+                    position: getVal(row, map.position) || '',
+                    subdivisi: getVal(row, map.subdivisi) || '',
+                    div: getVal(row, map.div) || '', // might need robust check
+                    executingAgency: getVal(row, map.executingAgency) || '',
+                    classification: getVal(row, map.classification) || '',
+
+                    realActivity: safeNum(getVal(row, map.realActivity)) || 0,
+                    realWeek1: getVal(row, map.realWeek1) || 'Pending'
                 };
+            };
 
-                // Dynamic Header Mapping
-                const headers = (jsonData[headerRowIndex] as string[]).map(h => String(h).toLowerCase().trim());
+            const payload = jsonData.slice(1) // Data starts at index 1 (after header at 0)
+                .map(processRow)
+                .filter(item => item && item.plan !== 'No Plan' && item.plan !== '');
 
-                const getIdx = (keywords: string[]) => headers.findIndex(h => keywords.some(k => h.includes(k)));
-
-                const map = {
-                    pic: getIdx(['nama', 'pic', 'person']),
-                    plan: getIdx(['plan', 'lead', 'activity', 'kegiatan']),
-                    program: getIdx(['program']),
-                    notes: getIdx(['catatan', 'notes', 'keterangan']),
-                    indikator: getIdx(['indikator']),
-                    lokasi: getIdx(['lokasi', 'location']),
-                    startDate: getIdx(['start', 'mulai']),
-                    endDate: getIdx(['end', 'selesai']),
-                    targetActivity: getIdx(['target kegiatan', 'target activity']),
-                    targetReceiver: getIdx(['target penerima', 'receiver']),
-                    goal: getIdx(['tujuan', 'goal']),
-                    position: getIdx(['jabatan', 'position']),
-                    subdivisi: getIdx(['subdivisi', 'subdivision']),
-                    div: getIdx(['divisi', 'division']), // exclude 'div pelaksana' if possible or check order? 'divisi' usually matches 'divisi'
-                    executingAgency: getIdx(['biro', 'pelaksana', 'agency']),
-                    classification: getIdx(['klasifikasi', 'class']),
-                    realActivity: getIdx(['realisasi kegiatan', 'real activity']),
-                    realWeek1: getIdx(['status'])
-                };
-
-                // Correction: "divisi" might match "subdivisi" if we are not careful. 
-                // Better to use exact match or specific unique strings if possible, or order preference.
-                // But 'subdivisi' includes 'divisi'. 
-                // Let's refine:
-                const exactIdx = (key: string) => headers.indexOf(key);
-
-                // Helper to get cell value
-                const getVal = (row: any[], idx: number) => idx !== -1 ? row[idx] : undefined;
-
-                const processRow = (row: any[]) => {
-                    if (!row || row.length === 0) return null;
-
-                    return {
-                        pic: getVal(row, map.pic) || '',
-                        plan: getVal(row, map.plan) || 'No Plan',
-                        program: getVal(row, map.program) || '',
-                        notes: getVal(row, map.notes) || '',
-                        indikator: getVal(row, map.indikator) || '',
-                        lokasi: getVal(row, map.lokasi) || '',
-                        startDate: parseDate(getVal(row, map.startDate)),
-                        endDate: parseDate(getVal(row, map.endDate)),
-                        targetActivity: safeNum(getVal(row, map.targetActivity)),
-                        targetReceiver: getVal(row, map.targetReceiver) || '',
-                        goal: getVal(row, map.goal) || '',
-                        position: getVal(row, map.position) || '',
-                        subdivisi: getVal(row, map.subdivisi) || '',
-                        div: getVal(row, map.div) || '', // might need robust check
-                        executingAgency: getVal(row, map.executingAgency) || '',
-                        classification: getVal(row, map.classification) || '',
-
-                        realActivity: safeNum(getVal(row, map.realActivity)) || 0,
-                        realWeek1: getVal(row, map.realWeek1) || 'Pending'
-                    };
-                };
-
-                const payload = jsonData.slice(1) // Data starts at index 1 (after header at 0)
-                    .map(processRow)
-                    .filter(item => item && item.plan !== 'No Plan' && item.plan !== '');
-
-                return apiClient.post('/action-plans/bulk', payload)
-            },
-                onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
+            return apiClient.post('/action-plans/bulk', payload)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
             toast.success("Action plans imported successfully")
             setTimeout(() => {
                 onClose()
