@@ -27,6 +27,19 @@ export const actionPlans = pgTable('action_plans', {
     targetActivity: integer('target_activity').default(0),
     targetNominal: decimal('target_nominal', { precision: 15, scale: 2 }).default('0'),
     realNominal: decimal('real_nominal', { precision: 15, scale: 2 }).default('0'),
+    realActivity: integer('real_activity').default(0), // Realisasi Kegiatan
+
+    // New Fields for Spreadsheet View
+    program: text('program'),
+    indikator: text('indikator'),
+    lokasi: text('lokasi'),
+    endDate: timestamp('end_date'),
+    targetReceiver: text('target_receiver'), // Target Penerima
+    goal: text('goal'), // Tujuan
+    position: text('position'), // Jabatan
+    subdivisi: text('subdivisi'),
+    executingAgency: text('executing_agency'), // Div Pelaksana
+    classification: text('classification'), // Klasifikasi Pelaksanaan
 
     // Weekly Tracking (Evaluation - 0/1 or count)
     evalWeek1: integer('eval_week_1').default(0),

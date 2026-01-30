@@ -15,6 +15,20 @@
       "when": 1769362484892,
       "tag": "0001_white_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769529086716,
+      "tag": "0002_boring_sentry",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1769706670911,
+      "tag": "0003_equal_ezekiel",
+      "breakpoints": true
     }
   ]
 }
