@@ -491,9 +491,9 @@ export default function ActionPlanPage() {
                                         <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={p.program}>{p.program}</td>
 
                                         {/* Smart Dates */}
-                                        <td className={`px-4 py-3 whitespace-nowrap ${isRowToday ? 'font-bold text-amber-600' : 'text-gray-500'}`}>
+                                        <td className={`px-4 py-3 whitespace-nowrap ${isRowToday ? 'font-bold text-amber-900 bg-amber-200/50 rounded-md px-2' : 'text-gray-500'}`}>
                                             {p.startDate ? format(new Date(p.startDate), 'dd MMM yyyy') : '-'}
-                                            {isRowToday && <span className="ml-2 inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse" />}
+                                            {isRowToday && <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[10px] uppercase font-bold rounded-full animate-pulse">TODAY</span>}
                                         </td>
                                         <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                                             {p.endDate ? format(new Date(p.endDate), 'dd MMM yyyy') : '-'}
@@ -539,7 +539,7 @@ export default function ActionPlanPage() {
                                         <td className="px-4 py-3 text-gray-500 truncate max-w-[150px]" title={p.indikator}>{p.indikator}</td>
                                         <td className="px-4 py-3 text-gray-500">{p.lokasi}</td>
                                         <td className="px-4 py-3 text-gray-500 truncate max-w-[100px]">{p.targetReceiver}</td>
-                                        <td className="px-4 py-3 text-gray-500 md:table-cell hidden">{p.divisi}</td>
+                                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{p.divisi}</td>
                                     </tr>
                                 )
                             })
