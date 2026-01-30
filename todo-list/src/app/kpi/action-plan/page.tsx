@@ -86,7 +86,7 @@ export default function ActionPlanPage() {
             return matchesSearch && matchesDate
         })
 
-        // Sort Logic
+        // Sort Logic: Stable & Predictable
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
@@ -94,21 +94,25 @@ export default function ActionPlanPage() {
             const dateA = a.startDate ? new Date(a.startDate) : new Date(0)
             const dateB = b.startDate ? new Date(b.startDate) : new Date(0)
 
-            // 1. Priority: Is Today?
+            // 1. Critical Priority: Start Date == Today
             const isTodayA = isSameDay(dateA, today)
             const isTodayB = isSameDay(dateB, today)
 
             if (isTodayA && !isTodayB) return -1
             if (!isTodayA && isTodayB) return 1
 
-            // 2. Secondary: Date Distance (assuming we still want closest dates near top)
-            // Use time value difference to keep stable order for same dates
+            // 2. Date Proximity (Closed date to today = higher)
+            // We use absolute difference to group "nearby" tasks together
             const distA = Math.abs(dateA.getTime() - today.getTime())
             const distB = Math.abs(dateB.getTime() - today.getTime())
 
-            if (distA !== distB) return distA - distB
+            if (Math.abs(distA - distB) > 1000) { // Tolerance for tiny diffs
+                return distA - distB
+            }
 
-            // 3. Fallback: ID to ensure stability when editing
+            // 3. Absolute Stability Fallback (ID)
+            // This ensures that even if you edit a row, it NEVER jumps
+            // unless the date actually changes.
             return (a.id || 0) - (b.id || 0)
         })
 
@@ -469,7 +473,7 @@ export default function ActionPlanPage() {
                                 const percent = Math.min(100, Math.round(((p.realActivity || 0) / (p.targetActivity || 1)) * 100))
 
                                 return (
-                                    <tr key={p.id} className={`group transition-all hover:bg-gray-50 ${selectedIds.includes(p.id) ? 'bg-indigo-50/60' : isRowToday ? 'bg-amber-100 shadow-sm border-l-4 border-l-amber-500' : 'bg-white'}`}>
+                                    <tr key={p.id} className={`group transition-all hover:bg-gray-50 ${selectedIds.includes(p.id) ? 'bg-indigo-50/60' : isRowToday ? 'bg-yellow-100 shadow-md border-l-[6px] border-l-yellow-500' : 'bg-white'}`}>
                                         <td className="px-4 py-3 border-r border-transparent">
                                             <input
                                                 type="checkbox"
