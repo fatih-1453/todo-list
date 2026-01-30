@@ -8,19 +8,7 @@ import jsPDF from 'jspdf';
 import { toast } from "sonner";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subMonths, isValid } from 'date-fns';
 import { id } from 'date-fns/locale';
-
-interface ActionPlan {
-    id: number;
-    plan: string;
-    div?: string;
-    dueDate?: string;
-    startDate?: string;
-    targetNominal?: number | string;
-    realNominal?: number | string;
-    realWeek1?: string;
-    department?: string;
-    pic?: string;
-}
+import { ActionPlan } from "@/types/action-plan";
 
 interface SmartReportModalProps {
     plans: ActionPlan[];
@@ -104,12 +92,12 @@ export function SmartReportModal({ plans, dateFrom, dateTo }: SmartReportModalPr
         filteredData.forEach(p => {
             const t = Number(p.targetNominal) || 0;
             const r = Number(p.realNominal) || 0;
-            const isDone = (p.realWeek1?.toLowerCase().includes('done')) || (t > 0 && r >= t);
+            const isDone = (p.status?.toLowerCase().includes('done')) || (t > 0 && r >= t);
 
             tTarget += t;
             tReal += r;
 
-            const dept = p.div || p.department || "General";
+            const dept = p.divisi || p.department || "General";
             if (!deptPerformance[dept]) deptPerformance[dept] = { total: 0, completed: 0, pending: 0 };
             deptPerformance[dept].total++;
 
@@ -344,10 +332,10 @@ export function SmartReportModal({ plans, dateFrom, dateTo }: SmartReportModalPr
                                     <tbody>
                                         {filteredData.slice(0, 8).map((p, idx) => (
                                             <tr key={idx} className="border-b border-slate-200">
-                                                <td className="py-3 px-1 text-slate-700 font-medium max-w-[300px]">{p.plan}</td>
-                                                <td className="py-3 px-1 text-slate-500">{p.div || p.department}</td>
+                                                <td className="py-3 px-1 text-slate-700 font-medium max-w-[300px]">{p.lead}</td>
+                                                <td className="py-3 px-1 text-slate-500">{p.divisi || p.department}</td>
                                                 <td className="py-3 px-1 text-center">
-                                                    {p.realWeek1?.includes('Done') ? (
+                                                    {p.status?.includes('Done') ? (
                                                         <span className="text-emerald-700 font-bold">SELESAI</span>
                                                     ) : (
                                                         <span className="text-amber-600 font-bold">PROSES</span>
