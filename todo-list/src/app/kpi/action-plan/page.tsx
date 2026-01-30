@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Download, Upload, Plus, RefreshCcw, FileSpreadsheet, File, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, Download, Upload, Plus, RefreshCcw, FileSpreadsheet, File, Trash2, Edit, ChevronLeft, ChevronRight, TrendingUp, PieChart, Activity, CheckCircle2, Clock, AlertCircle } from "lucide-react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
 import { UploadActionPlanModal } from "@/components/action-plan/UploadActionPlanModal"
@@ -241,73 +241,126 @@ export default function ActionPlanPage() {
         return isSameDay(new Date(dateStr), new Date())
     }
 
+    // Metrics Calculation
+    const dashboardMetrics = React.useMemo(() => {
+        const total = sortedAndFilteredPlans.length
+        if (total === 0) return { total: 0, progress: 0, done: 0, onProgress: 0, pending: 0 }
+
+        let totalProgress = 0
+        let done = 0
+        let onProgress = 0
+        let pending = 0
+
+        sortedAndFilteredPlans.forEach(p => {
+            const t = p.targetActivity || 1 // avoid div by zero
+            const r = p.realActivity || 0
+            const pct = Math.min(100, Math.round((r / t) * 100))
+            totalProgress += pct
+
+            const status = p.status?.toLowerCase() || ''
+            if (status === 'done') done++
+            else if (status.includes('progres') || status === 'on progres') onProgress++
+            else if (status !== 'cancel') pending++ // Assume everything else not cancel is pending
+        })
+
+        // Adjust counting if needed, but basic logic is fine
+        return {
+            total,
+            progress: Math.round(totalProgress / total),
+            done,
+            onProgress,
+            pending
+        }
+    }, [sortedAndFilteredPlans])
+
+    // Helper for Status Color
+    const getStatusColor = (status: string) => {
+        switch (status?.toLowerCase()) {
+            case 'done': return 'bg-emerald-100 text-emerald-700 border-emerald-200'
+            case 'on progres': return 'bg-blue-100 text-blue-700 border-blue-200'
+            case 'progres': return 'bg-blue-100 text-blue-700 border-blue-200'
+            case 'cancel': return 'bg-red-100 text-red-700 border-red-200'
+            default: return 'bg-gray-100 text-gray-700 border-gray-200'
+        }
+    }
+
     return (
-        <div className="h-screen flex flex-col bg-white overflow-hidden">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50/50">
-                <div className="flex items-center gap-2">
-                    <div className="bg-indigo-600 p-1.5 rounded-lg">
-                        <FileSpreadsheet className="w-5 h-5 text-white" />
+        <div className="h-screen flex flex-col bg-gray-50/50 overflow-hidden font-sans">
+            {/* Smart Dashboard Header */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 pb-2">
+                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                    <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
+                        <FileSpreadsheet className="w-6 h-6" />
                     </div>
-                    <h1 className="text-lg font-bold text-gray-800">Action Plan</h1>
-                    {selectedIds.length > 0 && (
-                        <span className="ml-2 text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-                            {selectedIds.length} selected
-                        </span>
-                    )}
+                    <div>
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Total Plans</p>
+                        <h3 className="text-2xl font-bold text-gray-800">{dashboardMetrics.total}</h3>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    {selectedIds.length > 0 && (
-                        <button
-                            onClick={() => {
-                                if (confirm(`Delete ${selectedIds.length} items?`)) {
-                                    bulkDeleteMutation.mutate(selectedIds)
-                                }
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded hover:bg-red-100 transition border border-red-200"
-                        >
-                            <Trash2 className="w-3.5 h-3.5" /> Delete Selected
-                        </button>
-                    )}
-                    <div className="h-6 w-px bg-gray-300 mx-1" />
-                    <button onClick={() => { setEditingPlan(null); setIsCreateOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded hover:bg-indigo-700 transition">
-                        <Plus className="w-3.5 h-3.5" /> New Plan
-                    </button>
-                    <div className="h-6 w-px bg-gray-300 mx-1" />
-                    <button onClick={() => setIsUploadOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded hover:bg-gray-50 transition">
-                        <Upload className="w-3.5 h-3.5" /> Import
-                    </button>
-                    <button onClick={handleDownloadTemplate} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded hover:bg-gray-50 transition">
-                        <File className="w-3.5 h-3.5" /> Template
-                    </button>
-                    <button onClick={handleDownloadData} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded hover:bg-gray-50 transition">
-                        <Download className="w-3.5 h-3.5" /> Download
-                    </button>
-                    <button onClick={() => generateSampleMutation.mutate()} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded hover:bg-gray-50 transition">
-                        <RefreshCcw className="w-3.5 h-3.5" /> Sample Data
-                    </button>
+                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                    <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
+                        <TrendingUp className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Avg Completion</p>
+                        <div className="flex items-end gap-2">
+                            <h3 className="text-2xl font-bold text-gray-800">{dashboardMetrics.progress}%</h3>
+                            <span className="text-xs text-emerald-600 mb-1 font-medium">on track</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+                            <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${dashboardMetrics.progress}%` }} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                    <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
+                        <Activity className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Active</p>
+                        <h3 className="text-2xl font-bold text-gray-800">{dashboardMetrics.onProgress}</h3>
+                        <p className="text-[10px] text-gray-400">On Progress</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                    <div className="p-3 bg-gray-50 rounded-lg text-gray-600">
+                        <PieChart className="w-6 h-6" />
+                    </div>
+                    <div className="flex gap-4">
+                        <div>
+                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Done</p>
+                            <h3 className="text-xl font-bold text-gray-800">{dashboardMetrics.done}</h3>
+                        </div>
+                        <div className="h-full w-px bg-gray-100" />
+                        <div>
+                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Pending</p>
+                            <h3 className="text-xl font-bold text-gray-800">{dashboardMetrics.pending}</h3>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Filter Bar */}
-            <div className="px-4 py-2 border-b border-gray-200 bg-white flex items-center gap-3">
-                <div className="relative w-64">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            {/* Toolbar & Filter - Stacked in a nice card */}
+            <div className="mx-4 mb-4 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-between p-2 gap-2">
+                {/* Search */}
+                <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                         type="text"
-                        placeholder="Search..."
+                        placeholder="Search action plans..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-transparent rounded-lg focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all outline-none"
                     />
                 </div>
-                <div className="h-6 w-px bg-gray-200" />
 
-                {/* Month/Year Filters */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 hide-scrollbar">
+                    {/* Month/Year Selectors */}
                     <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                        <SelectTrigger className="w-[110px] h-8 text-xs">
+                        <SelectTrigger className="w-[120px] h-9 border-none bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg text-xs font-medium">
                             <SelectValue placeholder="Month" />
                         </SelectTrigger>
                         <SelectContent>
@@ -321,7 +374,7 @@ export default function ActionPlanPage() {
                     </Select>
 
                     <Select value={selectedYear} onValueChange={setSelectedYear}>
-                        <SelectTrigger className="w-[80px] h-8 text-xs">
+                        <SelectTrigger className="w-[90px] h-9 border-none bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg text-xs font-medium">
                             <SelectValue placeholder="Year" />
                         </SelectTrigger>
                         <SelectContent>
@@ -333,131 +386,145 @@ export default function ActionPlanPage() {
                             ))}
                         </SelectContent>
                     </Select>
-                </div>
 
-                <div className="h-6 w-px bg-gray-200" />
-                <DatePickerWithRange date={dateRange} setDate={setDateRange} className="h-8 text-xs" />
+                    <div className="h-6 w-px bg-gray-200 mx-1" />
+
+                    {/* Action Buttons */}
+                    {selectedIds.length > 0 ? (
+                        <button
+                            onClick={() => {
+                                if (confirm(`Delete ${selectedIds.length} items?`)) {
+                                    bulkDeleteMutation.mutate(selectedIds)
+                                }
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 text-xs font-semibold rounded-lg hover:bg-red-100 transition-colors animate-in fade-in"
+                        >
+                            <Trash2 className="w-4 h-4" /> Delete ({selectedIds.length})
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <button onClick={handleDownloadData} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Export Excel">
+                                <Download className="w-5 h-5" />
+                            </button>
+                            <button onClick={() => { setEditingPlan(null); setIsCreateOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-all hover:scale-105 active:scale-95">
+                                <Plus className="w-4 h-4" /> New Plan
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Spreadsheet Table */}
-            <div className="flex-1 overflow-auto bg-white">
+            {/* Modern Table Container */}
+            <div className="flex-1 overflow-auto mx-4 mb-4 bg-white rounded-xl border border-gray-200 shadow-sm relative">
                 <table className="min-w-max w-full border-collapse text-xs">
-                    <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
+                    <thead className="sticky top-0 z-20 backdrop-blur-md bg-white/90 shadow-sm supports-[backdrop-filter]:bg-white/60">
                         <tr>
-                            <th className="px-3 py-2 border-b border-r border-gray-200 w-10 text-center">
+                            <th className="px-4 py-3 border-b border-gray-100 text-left w-10">
                                 <input
                                     type="checkbox"
-                                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                     checked={sortedAndFilteredPlans.length > 0 && selectedIds.length === sortedAndFilteredPlans.length}
                                     onChange={toggleSelectAll}
                                 />
                             </th>
-                            <th className="px-3 py-2 border-b border-r border-gray-200 w-20 text-center font-semibold text-gray-600 uppercase">Actions</th>
+                            <th className="px-4 py-3 border-b border-gray-100 text-left w-20 font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                             {[
-                                "No", "NAMA", "LEAD", "PROGRAM", "CATATAN",
-                                "Indikator", "LOKASI", "Start Date", "End Date",
-                                "TARGET KEGIATAN", "Realisasi Kegiatan", "Status",
-                                "TARGET PENERIMA", "TUJUAN", "JABATAN", "SUBDIVISI",
-                                "DIVISI", "DIV PELAKSANA", "KLASIFIKASI PELAKSANAAN"
+                                "No", "Nama", "Lead", "Program", "Start Date", "End Date",
+                                "Progress", "Status",
+                                "Target", "Real", "Indikator", "Lokasi", "Target Ops", "Divisi"
                             ].map((h, i) => (
-                                <th key={i} className="px-3 py-2 text-left font-semibold text-gray-600 border-b border-r border-gray-200 uppercase tracking-wide whitespace-nowrap bg-gray-50">
+                                <th key={i} className="px-4 py-3 text-left font-semibold text-gray-500 border-b border-gray-100 uppercase tracking-wider whitespace-nowrap">
                                     {h}
                                 </th>
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-50">
                         {isLoading ? (
-                            <tr><td colSpan={21} className="p-10 text-center text-gray-500">Loading data...</td></tr>
+                            <tr><td colSpan={20} className="p-20 text-center text-gray-400">Loading data...</td></tr>
                         ) : paginatedPlans.length === 0 ? (
-                            <tr><td colSpan={21} className="p-10 text-center text-gray-500">No action plans found.</td></tr>
+                            <tr><td colSpan={20} className="p-20 text-center text-gray-400 flex flex-col items-center gap-4">
+                                <div className="bg-gray-50 p-4 rounded-full"><FileSpreadsheet className="w-8 h-8 text-gray-300" /></div>
+                                <p>No action plans found.</p>
+                            </td></tr>
                         ) : (
                             paginatedPlans.map((p, idx) => {
                                 const isRowToday = isToday(p.startDate)
                                 const globalIndex = pageSize === 'all' ? idx + 1 : (currentPage - 1) * pageSize + idx + 1
+                                const percent = Math.min(100, Math.round(((p.realActivity || 0) / (p.targetActivity || 1)) * 100))
+
                                 return (
-                                    <tr key={p.id} className={`hover:bg-blue-50/50 group transition-colors ${selectedIds.includes(p.id) ? 'bg-blue-50' : isRowToday ? 'bg-yellow-100/60 border-l-4 border-l-yellow-500' : ''}`}>
-                                        <td className="px-3 py-2 text-center border-r border-gray-100">
+                                    <tr key={p.id} className={`group transition-all hover:bg-gray-50 ${selectedIds.includes(p.id) ? 'bg-indigo-50/60' : isRowToday ? 'bg-amber-50/70' : 'bg-white'}`}>
+                                        <td className="px-4 py-3 border-r border-transparent">
                                             <input
                                                 type="checkbox"
-                                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                                 checked={selectedIds.includes(p.id)}
                                                 onChange={() => toggleSelect(p.id)}
                                             />
                                         </td>
-                                        <td className="px-2 py-2 border-r border-gray-100">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <button
-                                                    onClick={() => handleUpdate(p)}
-                                                    className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <Edit className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        if (confirm('Delete this plan?')) deleteMutation.mutate(p.id)
-                                                    }}
-                                                    className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handleUpdate(p)} className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"><Edit className="w-3.5 h-3.5" /></button>
+                                                <button onClick={() => { if (confirm('Delete?')) deleteMutation.mutate(p.id) }} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                                             </div>
                                         </td>
-                                        <td className="px-3 py-2 text-center text-gray-500 border-r border-gray-100">{globalIndex}</td>
-                                        <td className="px-3 py-2 font-medium text-gray-900 border-r border-gray-100 whitespace-nowrap">{p.pic}</td>
-                                        <td className="px-3 py-2 text-gray-800 border-r border-gray-100 font-medium whitespace-nowrap">{p.lead}</td>
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 max-w-xs truncate" title={p.program}>{p.program}</td>
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 max-w-xs truncate" title={p.notes}>{p.notes}</td>
 
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 truncate">{p.indikator}</td>
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100">{p.lokasi}</td>
-                                        <td className={`px-3 py-2 border-r border-gray-100 w-24 whitespace-nowrap ${isRowToday ? 'font-bold text-yellow-800' : 'text-gray-600'}`}>
-                                            {p.startDate ? format(new Date(p.startDate), 'MMM dd, yyyy') : '-'}
+                                        <td className="px-4 py-3 text-gray-500">{globalIndex}</td>
+                                        <td className="px-4 py-3 font-medium text-gray-900">{p.pic}</td>
+                                        <td className="px-4 py-3 text-gray-600">{p.lead}</td>
+                                        <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={p.program}>{p.program}</td>
+
+                                        {/* Smart Dates */}
+                                        <td className={`px-4 py-3 whitespace-nowrap ${isRowToday ? 'font-bold text-amber-600' : 'text-gray-500'}`}>
+                                            {p.startDate ? format(new Date(p.startDate), 'dd MMM yyyy') : '-'}
+                                            {isRowToday && <span className="ml-2 inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse" />}
                                         </td>
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 w-24 whitespace-nowrap">
-                                            {p.endDate ? format(new Date(p.endDate), 'MMM dd, yyyy') : '-'}
+                                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                                            {p.endDate ? format(new Date(p.endDate), 'dd MMM yyyy') : '-'}
                                         </td>
 
-                                        <td className="px-3 py-2 text-center font-semibold text-indigo-600 border-r border-gray-100">{p.targetActivity}</td>
+                                        {/* Progress Bar */}
+                                        <td className="px-4 py-3 min-w-[140px]">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-[10px] font-semibold text-gray-700">{percent}%</span>
+                                            </div>
+                                            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                                <div className={`h-full rounded-full transition-all duration-500 ${percent === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${percent}%` }} />
+                                            </div>
+                                        </td>
 
-                                        {/* Realisasi Kegiatan (Editable) */}
-                                        <td className="px-0 py-0 text-center text-gray-700 border-r border-gray-100">
+                                        {/* Modern Status Badge */}
+                                        <td className="px-4 py-3">
+                                            <div className="relative">
+                                                <select
+                                                    className={`appearance-none pl-3 pr-8 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 hover:brightness-95 transition-all ${getStatusColor(p.status || 'Pending')}`}
+                                                    value={p.status || 'Pending'}
+                                                    onChange={(e) => handleUpdateStatus(p.id, e.target.value)}
+                                                >
+                                                    <option value="Pending">Pending</option>
+                                                    <option value="Cancel">Cancel</option>
+                                                    <option value="Progres">Progres</option>
+                                                    <option value="On Progres">On Progres</option>
+                                                    <option value="Done">Done</option>
+                                                </select>
+                                            </div>
+                                        </td>
+
+                                        <td className="px-4 py-3 text-center font-mono text-xs text-gray-600 bg-gray-50/50 rounded">{p.targetActivity}</td>
+                                        <td className="px-4 py-3 text-center">
                                             <input
                                                 type="number"
-                                                className="w-full h-full px-2 py-2 bg-transparent text-center focus:outline-none focus:bg-indigo-50 transition-colors"
+                                                className="w-16 px-2 py-1 bg-transparent border border-transparent hover:border-gray-200 focus:border-indigo-500 rounded text-center text-xs transition-colors focus:outline-none"
                                                 defaultValue={p.realActivity || 0}
                                                 onBlur={(e) => handleUpdateRealActivity(p.id, e.target.value)}
                                             />
                                         </td>
 
-                                        {/* Status (Dropdown) */}
-                                        <td className="px-0 py-0 border-r border-gray-100 bg-transparent">
-                                            <select
-                                                className={`w-full h-full px-2 py-2 text-[10px] font-medium uppercase bg-transparent focus:outline-none cursor-pointer ${p.status?.toLowerCase() === 'done' ? 'text-emerald-700' :
-                                                    p.status?.toLowerCase() === 'on progres' ? 'text-amber-700' :
-                                                        p.status?.toLowerCase() === 'cancel' ? 'text-red-700' :
-                                                            'text-gray-500'
-                                                    }`}
-                                                value={p.status || 'Pending'}
-                                                onChange={(e) => handleUpdateStatus(p.id, e.target.value)}
-                                            >
-                                                <option value="Pending">Pending</option>
-                                                <option value="Cancel">Cancel</option>
-                                                <option value="Progres">Progres</option>
-                                                <option value="On Progres">On Progres</option>
-                                                <option value="Done">Done</option>
-                                            </select>
-                                        </td>
-
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.targetReceiver}</td>
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 uppercase text-[10px] font-semibold">{p.goal}</td>
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.position}</td>
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.subdivisi}</td>
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.divisi}</td>
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.executingAgency}</td>
-                                        <td className="px-3 py-2 text-gray-600 border-r border-gray-100 whitespace-nowrap">{p.classification}</td>
+                                        <td className="px-4 py-3 text-gray-500 truncate max-w-[150px]" title={p.indikator}>{p.indikator}</td>
+                                        <td className="px-4 py-3 text-gray-500">{p.lokasi}</td>
+                                        <td className="px-4 py-3 text-gray-500 truncate max-w-[100px]">{p.targetReceiver}</td>
+                                        <td className="px-4 py-3 text-gray-500 md:table-cell hidden">{p.divisi}</td>
                                     </tr>
                                 )
                             })
@@ -466,15 +533,15 @@ export default function ActionPlanPage() {
                 </table>
             </div>
 
-            {/* Pagination Footer */}
-            <div className="px-4 py-2 border-t border-gray-200 bg-gray-50 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                    <span className="text-gray-600">Rows per page:</span>
+            {/* Pagination */}
+            <div className="px-6 py-3 bg-white border-t border-gray-200 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span>Rows per page:</span>
                     <Select value={pageSize.toString()} onValueChange={(v) => {
                         setPageSize(v === 'all' ? 'all' : Number(v))
                         setCurrentPage(1)
                     }}>
-                        <SelectTrigger className="w-[70px] h-7 text-xs">
+                        <SelectTrigger className="w-[70px] h-8 text-xs bg-gray-50 border-gray-200">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -483,29 +550,28 @@ export default function ActionPlanPage() {
                             <SelectItem value="all">All</SelectItem>
                         </SelectContent>
                     </Select>
-                    <span className="text-gray-500 ml-2">
-                        Total {sortedAndFilteredPlans.length} items
-                    </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <span className="text-gray-600 mr-2">
+                    <span className="text-xs text-gray-500">
                         Page {currentPage} of {totalPages}
                     </span>
-                    <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <ChevronRight className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden bg-white">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="p-2 hover:bg-gray-50 disabled:bg-gray-50 disabled:text-gray-300 transition-colors border-r border-gray-200"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="p-2 hover:bg-gray-50 disabled:bg-gray-50 disabled:text-gray-300 transition-colors"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
