@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Download, Upload, Plus, RefreshCcw, FileSpreadsheet, File } from "lucide-react"
+import { Search, Download, Upload, Plus, RefreshCcw, FileSpreadsheet, File, Trash2, Edit } from "lucide-react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
 import { UploadActionPlanModal } from "@/components/action-plan/UploadActionPlanModal"
@@ -11,6 +11,7 @@ import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import { startOfMonth, endOfMonth, format, isSameDay } from "date-fns"
 import { ActionPlan } from "@/types/action-plan"
+import { toast } from "sonner"
 
 export default function ActionPlanPage() {
     const queryClient = useQueryClient()
@@ -19,6 +20,7 @@ export default function ActionPlanPage() {
     const [editingPlan, setEditingPlan] = React.useState<ActionPlan | null>(null)
     const [search, setSearch] = React.useState("")
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>()
+    const [selectedIds, setSelectedIds] = React.useState<number[]>([])
 
     React.useEffect(() => {
         setDateRange({
@@ -58,6 +60,39 @@ export default function ActionPlanPage() {
             return matchesSearch && matchesDate
         })
     }, [plans, search, dateRange])
+
+    // Selection Logic
+    const toggleSelectAll = () => {
+        if (selectedIds.length === filteredPlans.length) {
+            setSelectedIds([])
+        } else {
+            setSelectedIds(filteredPlans.map(p => p.id))
+        }
+    }
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        )
+    }
+
+    // Mutations
+    const deleteMutation = useMutation({
+        mutationFn: (id: number) => apiClient.delete(`/action-plans/${id}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
+            toast.success("Plan deleted successfully")
+        }
+    })
+
+    const bulkDeleteMutation = useMutation({
+        mutationFn: (ids: number[]) => apiClient.post('/action-plans/delete-bulk', { ids }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
+            setSelectedIds([])
+            toast.success("Plans deleted successfully")
+        }
+    })
 
     // Excel Export
     const handleDownloadData = () => {
@@ -144,6 +179,11 @@ export default function ActionPlanPage() {
         }
     }
 
+    const handleUpdate = (plan: ActionPlan) => {
+        setEditingPlan(plan)
+        setIsCreateOpen(true)
+    }
+
     return (
         <div className="h-screen flex flex-col bg-white overflow-hidden">
             {/* Toolbar */}
@@ -153,10 +193,28 @@ export default function ActionPlanPage() {
                         <FileSpreadsheet className="w-5 h-5 text-white" />
                     </div>
                     <h1 className="text-lg font-bold text-gray-800">Action Plan</h1>
+                    {selectedIds.length > 0 && (
+                        <span className="ml-2 text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                            {selectedIds.length} selected
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded hover:bg-indigo-700 transition">
+                    {selectedIds.length > 0 && (
+                        <button
+                            onClick={() => {
+                                if (confirm(`Delete ${selectedIds.length} items?`)) {
+                                    bulkDeleteMutation.mutate(selectedIds)
+                                }
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded hover:bg-red-100 transition border border-red-200"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+                        </button>
+                    )}
+                    <div className="h-6 w-px bg-gray-300 mx-1" />
+                    <button onClick={() => { setEditingPlan(null); setIsCreateOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded hover:bg-indigo-700 transition">
                         <Plus className="w-3.5 h-3.5" /> New Plan
                     </button>
                     <div className="h-6 w-px bg-gray-300 mx-1" />
@@ -196,6 +254,15 @@ export default function ActionPlanPage() {
                 <table className="min-w-max w-full border-collapse text-xs">
                     <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                         <tr>
+                            <th className="px-3 py-2 border-b border-r border-gray-200 w-10 text-center">
+                                <input
+                                    type="checkbox"
+                                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    checked={filteredPlans.length > 0 && selectedIds.length === filteredPlans.length}
+                                    onChange={toggleSelectAll}
+                                />
+                            </th>
+                            <th className="px-3 py-2 border-b border-r border-gray-200 w-20 text-center font-semibold text-gray-600 uppercase">Actions</th>
                             {[
                                 "No", "NAMA", "LEAD", "PROGRAM", "CATATAN",
                                 "Indikator", "LOKASI", "Start Date", "End Date",
@@ -211,12 +278,40 @@ export default function ActionPlanPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {isLoading ? (
-                            <tr><td colSpan={19} className="p-10 text-center text-gray-500">Loading data...</td></tr>
+                            <tr><td colSpan={21} className="p-10 text-center text-gray-500">Loading data...</td></tr>
                         ) : filteredPlans.length === 0 ? (
-                            <tr><td colSpan={19} className="p-10 text-center text-gray-500">No action plans found.</td></tr>
+                            <tr><td colSpan={21} className="p-10 text-center text-gray-500">No action plans found.</td></tr>
                         ) : (
                             filteredPlans.map((p, idx) => (
-                                <tr key={p.id} className="hover:bg-blue-50/50 group transition-colors">
+                                <tr key={p.id} className={`hover:bg-blue-50/50 group transition-colors ${selectedIds.includes(p.id) ? 'bg-blue-50' : ''}`}>
+                                    <td className="px-3 py-2 text-center border-r border-gray-100">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            checked={selectedIds.includes(p.id)}
+                                            onChange={() => toggleSelect(p.id)}
+                                        />
+                                    </td>
+                                    <td className="px-2 py-2 border-r border-gray-100">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <button
+                                                onClick={() => handleUpdate(p)}
+                                                className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                                title="Edit"
+                                            >
+                                                <Edit className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm('Delete this plan?')) deleteMutation.mutate(p.id)
+                                                }}
+                                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    </td>
                                     <td className="px-3 py-2 text-center text-gray-500 border-r border-gray-100">{idx + 1}</td>
                                     <td className="px-3 py-2 font-medium text-gray-900 border-r border-gray-100 whitespace-nowrap">{p.pic}</td>
                                     <td className="px-3 py-2 text-gray-800 border-r border-gray-100 font-medium whitespace-nowrap">{p.lead}</td>
@@ -278,7 +373,6 @@ export default function ActionPlanPage() {
             </div>
 
             <UploadActionPlanModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
-            {/* Note: Create Modal needs update later to support new fields, but handled next */}
             <CreateActionPlanModal
                 isOpen={isCreateOpen}
                 onClose={() => setIsCreateOpen(false)}
