@@ -549,7 +549,7 @@ export default function ActionPlanPage() {
                             {[
                                 "No", "Nama", "Program", "Catatan", "Start Date", "End Date",
                                 "Progress", "Status",
-                                "Target", "Real", "Indikator", "Lokasi", "Target Ops", "Divisi"
+                                "Target", "Real", "Indikator", "Lokasi", "Target Penerima", "Divisi"
                             ].map((h, i) => (
                                 <th key={i} className="px-4 py-3 text-left font-semibold text-gray-500 border-b border-gray-100 uppercase tracking-wider whitespace-nowrap">
                                     {h}
