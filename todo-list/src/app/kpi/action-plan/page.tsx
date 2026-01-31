@@ -547,7 +547,7 @@ export default function ActionPlanPage() {
                             </th>
                             <th className="px-4 py-3 border-b border-gray-100 text-left w-20 font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                             {[
-                                "No", "Nama", "Lead", "Program", "Start Date", "End Date",
+                                "No", "Nama", "Program", "Catatan", "Start Date", "End Date",
                                 "Progress", "Status",
                                 "Target", "Real", "Indikator", "Lokasi", "Target Ops", "Divisi"
                             ].map((h, i) => (
@@ -590,8 +590,8 @@ export default function ActionPlanPage() {
 
                                         <td className="px-4 py-3 text-gray-500">{globalIndex}</td>
                                         <td className="px-4 py-3 font-medium text-gray-900">{p.pic}</td>
-                                        <td className="px-4 py-3 text-gray-600">{p.lead}</td>
                                         <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={p.program}>{p.program}</td>
+                                        <td className="px-4 py-3 text-gray-600 max-w-[200px] whitespace-normal break-words" title={p.notes}>{p.notes}</td>
 
                                         {/* Smart Dates */}
                                         <td className={`px-4 py-3 whitespace-nowrap ${isRowToday ? 'font-bold text-amber-900 bg-amber-200/50 rounded-md px-2' : 'text-gray-500'}`}>
