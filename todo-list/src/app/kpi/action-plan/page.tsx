@@ -629,7 +629,7 @@ export default function ActionPlanPage() {
                                             </div>
                                         </td>
 
-                                        <td className="px-4 py-3 text-center font-mono text-xs text-gray-600 bg-gray-50/50 rounded">{p.targetActivity}</td>
+                                        <td className="px-4 py-3 text-center font-mono text-xs text-gray-600 bg-gray-50/50 rounded">{(p.targetActivity || 0).toLocaleString('id-ID')}</td>
                                         <td className="px-4 py-3 text-center">
                                             <input
                                                 type="number"
