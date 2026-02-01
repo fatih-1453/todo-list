@@ -420,10 +420,12 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
                 {/* Bottom Actions */}
                 <div className="mt-auto flex flex-col gap-4 w-full px-2">
-                    <button className={cn(
-                        "flex items-center p-3 text-gray-400 hover:text-black transition-colors rounded-xl hover:bg-white/50",
-                        isExpanded ? "justify-start px-4" : "justify-center"
-                    )}>
+                    <Link
+                        href="/settings"
+                        className={cn(
+                            "flex items-center p-3 text-gray-400 hover:text-black transition-colors rounded-xl hover:bg-white/50",
+                            isExpanded ? "justify-start px-4" : "justify-center"
+                        )}>
                         <Settings className="w-6 h-6 flex-shrink-0" />
                         <span className={cn(
                             "ml-3 font-medium text-sm whitespace-nowrap overflow-hidden transition-all duration-300",
@@ -431,7 +433,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                         )}>
                             Settings
                         </span>
-                    </button>
+                    </Link>
                     <button
                         onClick={handleLogout}
                         className={cn(

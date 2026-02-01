@@ -15,6 +15,7 @@ import fileRoutes from './file.routes';
 import assessmentRoutes from './assessment.routes';
 import programRoutes from './program.routes';
 import canvassingRoutes from './canvassing.routes';
+import roadmapRoutes from './roadmap.routes';
 
 const router = Router();
 
@@ -35,5 +36,6 @@ router.use('/files', fileRoutes);
 router.use('/assessments', assessmentRoutes);
 router.use('/programs', programRoutes);
 router.use('/canvassing', canvassingRoutes);
+router.use('/roadmap', roadmapRoutes);
 
 export default router;
