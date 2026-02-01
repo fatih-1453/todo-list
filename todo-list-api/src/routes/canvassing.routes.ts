@@ -94,8 +94,12 @@ router.get('/targets', async (req: AuthenticatedRequest, res: Response) => {
 
 router.post('/targets', async (req: AuthenticatedRequest, res: Response) => {
     try {
+        const payload = { ...req.body };
+        if (payload.startDate) payload.startDate = new Date(payload.startDate);
+        if (payload.endDate) payload.endDate = new Date(payload.endDate);
+
         const newItem = await canvassingService.createTarget({
-            ...req.body,
+            ...payload,
             orgId: req.activeOrgId!
         });
         res.status(201).json(newItem);
@@ -108,7 +112,11 @@ router.post('/targets', async (req: AuthenticatedRequest, res: Response) => {
 router.put('/targets/:id', async (req: AuthenticatedRequest, res: Response) => {
     try {
         const id = parseInt(req.params.id as string);
-        const updated = await canvassingService.updateTarget(id, req.activeOrgId!, req.body);
+        const payload = { ...req.body };
+        if (payload.startDate) payload.startDate = new Date(payload.startDate);
+        if (payload.endDate) payload.endDate = new Date(payload.endDate);
+
+        const updated = await canvassingService.updateTarget(id, req.activeOrgId!, payload);
         res.json(updated);
     } catch (error) {
         console.error('Error updating target:', error);
