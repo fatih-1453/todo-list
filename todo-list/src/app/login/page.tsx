@@ -159,11 +159,16 @@ export default function LoginPage() {
                                                         </p>
 
                                                         {/* Full Description (Visible Hover - Overlay) */}
-                                                        <div className="absolute left-0 top-full mt-1 w-full bg-white p-3 rounded-xl shadow-xl border border-gray-100 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200 z-50 text-left">
-                                                            <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                                                                {item.description}
-                                                            </p>
-                                                        </div>
+                                                        {(() => {
+                                                            const isBottomItem = item.quarter.includes("2029") || item.quarter.includes("2030");
+                                                            return (
+                                                                <div className={`absolute left-0 w-full bg-white p-3 rounded-xl shadow-xl border border-gray-100 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200 z-50 text-left ${isBottomItem ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+                                                                    <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                                                                        {item.description}
+                                                                    </p>
+                                                                </div>
+                                                            )
+                                                        })()}
 
                                                         {/* Alternative: In-place expansion via absolute positioning over the truncated text 
                                                             Actually, the 'popover below' strategy keeps the grid stable. 
