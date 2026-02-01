@@ -284,6 +284,17 @@ export default function ReportingPage() {
             { name: "Dalam Proses", value: pending, color: "#f59e0b" },
         ];
 
+        // D. Pending Evaluation Grouping (By Person)
+        const pendingByPerson: Record<string, ActionPlan[]> = {};
+        evaluationItems.forEach(p => {
+            const pName = p.pic || "Unassigned";
+            if (!pendingByPerson[pName]) pendingByPerson[pName] = [];
+            pendingByPerson[pName].push(p);
+        });
+
+        const sortedPendingPeople = Object.entries(pendingByPerson)
+            .sort(([, a], [, b]) => b.length - a.length); // Sort by most pending items
+
         return {
             periodLabel: format(start, "dd MMM yyyy") + " - " + format(end, "dd MMM yyyy"),
             futurePeriodLabel: format(futureStart, "dd MMM") + " - " + format(futureEnd, "dd MMM yyyy"),
@@ -292,7 +303,7 @@ export default function ReportingPage() {
             analysisText, mitigationText,
             evaluationItems, futureItems, futureByDivisi,
             statusData,
-            sortedDivisions, sortedPeople,
+            sortedDivisions, sortedPeople, sortedPendingPeople,
             chartData: {
                 financial: filtered.reduce((acc: any[], p) => {
                     const idx = acc.findIndex(k => k.name === (p.divisi || "General"));
@@ -723,6 +734,59 @@ export default function ReportingPage() {
                                     <div className="text-center text-xs text-slate-400 mt-2 italic">Menampilkan 10 dari {generatedReport.sortedPeople.length} personel</div>
                                 )}
                             </section>
+
+                            <div className="break-inside-avoid-page"></div>
+
+                            {/* Section 3.5: Pending Evaluation Details */}
+                            {generatedReport.sortedPendingPeople.length > 0 && (
+                                <section className="mb-10 page-break-inside-avoid">
+                                    <h3 className="text-sm font-bold text-orange-700 uppercase tracking-wider mb-4 border-b border-orange-200 pb-2 flex items-center gap-2">
+                                        <AlertTriangle className="w-4 h-4" />
+                                        Evaluasi Pending & Hambatan
+                                    </h3>
+                                    <div className="grid grid-cols-1 gap-6">
+                                        {generatedReport.sortedPendingPeople.map(([name, items], idx) => {
+                                            const imageUrl = getUserImage(name);
+                                            return (
+                                                <div key={idx} className="bg-orange-50/50 border border-orange-100 rounded-lg p-4">
+                                                    <div className="flex items-center gap-3 mb-3 border-b border-orange-100 pb-2">
+                                                        <div className="relative">
+                                                            {imageUrl ? (
+                                                                <img src={imageUrl} alt={name} className="w-8 h-8 rounded-full object-cover border border-orange-200" />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-xs font-bold text-orange-700">
+                                                                    {name.substring(0, 2).toUpperCase()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-xs font-bold text-slate-800">{name}</div>
+                                                            <div className="text-[10px] text-orange-600 font-medium">{items.length} Pending Actions</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-3">
+                                                        {items.map((item, i) => (
+                                                            <div key={i} className="bg-white p-3 rounded border border-orange-100 shadow-sm text-xs">
+                                                                <div className="flex justify-between items-start mb-1">
+                                                                    <span className="font-semibold text-slate-800 flex-1 mr-2">{item.lead}</span>
+                                                                    <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                                                                        Due: {item.endDate ? format(new Date(item.endDate), 'dd/MM/yy') : '-'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-slate-600 italic bg-slate-50 p-2 rounded mt-1 border border-slate-100">
+                                                                    <span className="font-semibold text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">Keterangan / Kendala:</span>
+                                                                    {item.keterangan || "Tidak ada keterangan."}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </section>
+                            )}
 
                             <div className="break-inside-avoid-page"></div>
 
