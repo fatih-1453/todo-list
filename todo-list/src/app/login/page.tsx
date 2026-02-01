@@ -67,49 +67,122 @@ export default function LoginPage() {
             <div className="hidden lg:flex w-[55%] bg-gray-50 relative overflow-hidden flex-col justify-center p-12">
                 <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5"></div>
 
-                <div className="relative z-10 max-w-xl mx-auto w-full">
-                    <h2 className="text-3xl font-bold mb-2 tracking-tight">Product Roadmap</h2>
-                    <p className="text-gray-500 mb-10">Our journey and upcoming milestones.</p>
+                <div className="relative z-10 max-w-xl mx-auto w-full h-full flex flex-col">
+                    <div className="mb-8">
+                        <h2 className="text-4xl font-extrabold mb-3 tracking-tight text-gray-900">
+                            Product <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Roadmap</span>
+                        </h2>
+                        <p className="text-gray-500 text-lg">Following our journey to excellence.</p>
+                    </div>
 
                     {loadingRoadmap ? (
-                        <div className="flex justify-center py-20">
-                            <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+                        <div className="flex-1 flex items-center justify-center">
+                            <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
                         </div>
                     ) : (
-                        <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-300 before:to-transparent">
-                            {roadmapItems.map((item, index) => (
-                                <motion.div
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                    key={item.id}
-                                    className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active"
-                                >
-                                    {/* Icon */}
-                                    <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-gray-100 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10" style={{ backgroundColor: item.color }}>
-                                        <MapPin className="w-4 h-4 text-white" />
-                                    </div>
+                        <div className="relative flex-1 overflow-y-auto pr-4 scrollbar-hide py-4">
+                            {/* Continuous Connecting Line */}
+                            <div className="absolute left-8 top-4 bottom-4 w-1 bg-gray-200 rounded-full" />
+                            <div className="absolute left-8 top-4 w-1 bg-gradient-to-b from-blue-500 via-purple-500 to-transparent rounded-full"
+                                style={{ height: `${(roadmapItems.filter(i => i.status === 'completed').length / roadmapItems.length) * 100}%` }}
+                            />
 
-                                    {/* Content */}
-                                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="font-bold text-gray-900">{item.title}</span>
-                                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{item.quarter}</span>
-                                        </div>
-                                        <p className="text-sm text-gray-500 line-clamp-2">{item.description}</p>
-                                        <div className="mt-2 flex items-center gap-2">
-                                            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full rounded-full ${item.status === 'completed' ? 'bg-green-500 w-full' :
-                                                        item.status === 'in-progress' ? 'bg-blue-500 w-1/2' : 'bg-gray-300 w-0'
-                                                        }`}
-                                                />
+                            <div className="space-y-12">
+                                {roadmapItems.map((item, index) => {
+                                    const isCompleted = item.status === 'completed';
+                                    const isInProgress = item.status === 'in-progress';
+
+                                    return (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.15, type: "spring" }}
+                                            key={item.id}
+                                            className={`relative pl-24 group ${isInProgress ? 'scale-105' : ''}`}
+                                        >
+                                            {/* Node Marker */}
+                                            <div className={`absolute left-0 top-0 w-16 h-16 flex items-center justify-center z-20`}>
+                                                <div className={`
+                                                    relative flex items-center justify-center w-12 h-12 rounded-full border-4 shadow-lg transition-all duration-500
+                                                    ${isCompleted ? 'bg-green-500 border-green-100' :
+                                                        isInProgress ? 'bg-blue-600 border-blue-100' :
+                                                            'bg-white border-gray-100'}
+                                                `}>
+                                                    {isInProgress && (
+                                                        <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-20"></span>
+                                                    )}
+
+                                                    {isCompleted ? (
+                                                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    ) : isInProgress ? (
+                                                        <MapPin className="w-6 h-6 text-white animate-bounce" />
+                                                    ) : (
+                                                        <div className="w-3 h-3 rounded-full bg-gray-300" />
+                                                    )}
+                                                </div>
                                             </div>
-                                            <span className="text-[10px] uppercase font-bold text-gray-400">{item.status}</span>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
+
+                                            {/* Connector Line to Card */}
+                                            <div className={`absolute left-16 top-8 w-8 h-0.5 ${isInProgress ? 'bg-blue-500' : 'bg-gray-200'}`} />
+
+                                            {/* Card Content */}
+                                            <div
+                                                className={`
+                                                    relative p-6 rounded-2xl border transition-all duration-300
+                                                    ${isInProgress
+                                                        ? 'bg-white shadow-xl shadow-blue-500/10 border-blue-100 ring-1 ring-blue-50'
+                                                        : 'bg-white/60 hover:bg-white shadow-sm hover:shadow-md border-gray-100 backdrop-blur-sm'
+                                                    }
+                                                `}
+                                            >
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <span className={`
+                                                            inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide
+                                                            ${isInProgress ? 'bg-blue-100 text-blue-700' :
+                                                                isCompleted ? 'bg-green-100 text-green-700' :
+                                                                    'bg-gray-100 text-gray-500'}
+                                                        `}>
+                                                            {item.quarter}
+                                                        </span>
+                                                        <h3 className={`text-lg font-bold mt-1 ${isInProgress ? 'text-gray-900' : 'text-gray-700'}`}>
+                                                            {item.title}
+                                                        </h3>
+                                                    </div>
+                                                    {isInProgress && (
+                                                        <span className="flex h-3 w-3 relative">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <p className="text-gray-500 text-sm leading-relaxed mb-4">
+                                                    {item.description}
+                                                </p>
+
+                                                {/* Smart Progress Visual */}
+                                                <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                                    <motion.div
+                                                        initial={{ width: 0 }}
+                                                        animate={{ width: isCompleted ? '100%' : isInProgress ? '60%' : '0%' }}
+                                                        transition={{ duration: 1.5, ease: "easeOut" }}
+                                                        className={`h-full rounded-full ${isCompleted ? 'bg-gradient-to-r from-green-400 to-green-500' :
+                                                                isInProgress ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-gray-300'
+                                                            }`}
+                                                    />
+                                                </div>
+                                                <div className="flex justify-between mt-2 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
+                                                    <span>Progress</span>
+                                                    <span>{isCompleted ? '100%' : isInProgress ? 'In Progress' : '0%'}</span>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
                 </div>
