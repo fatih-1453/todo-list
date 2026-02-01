@@ -19,8 +19,15 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
 // Create
 router.post('/', async (req: AuthenticatedRequest, res: Response) => {
     try {
+        const payload = req.body;
+
+        // Convert date string to Date object if present
+        if (payload.date) {
+            payload.date = new Date(payload.date);
+        }
+
         const newItem = await transactionService.create({
-            ...req.body,
+            ...payload,
             orgId: req.activeOrgId!
         });
         res.status(201).json(newItem);
