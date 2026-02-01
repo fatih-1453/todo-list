@@ -3,9 +3,9 @@
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
-import { Loader2, Plus, Pencil, Trash2 } from "lucide-react"
+import { Loader2, Plus, Pencil, Trash2, Database } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -75,54 +75,87 @@ export default function SettingsPage() {
         }
     }
 
+    // Seed Data Function
+    const handleSeedData = async () => {
+        if (!confirm("This will add the template data from the reference image. Continue?")) return;
+
+        const templateItems: Omit<RoadmapItem, 'id'>[] = [
+            { quarter: "Q1'25", title: "Milestone", description: "Lorem ipsum dolor sit amet, consectetuer adipiscing elit.", status: "completed", displayOrder: 1, color: "#A0F1E8" },
+            { quarter: "Q2'25", title: "Milestone", description: "Maecenas porttitor congue massa. Fusce posuere, magna sed.", status: "completed", displayOrder: 2, color: "#6EE7D8" },
+            { quarter: "Q3'25", title: "Milestone", description: "Fusce posuere, magna sed pulvinar ultricies, purus lectus malesuada.", status: "in-progress", displayOrder: 3, color: "#4FD1C5" },
+            { quarter: "Q4'25", title: "Milestone", description: "Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus.", status: "upcoming", displayOrder: 4, color: "#63B3ED" },
+            { quarter: "Q1'26", title: "Milestone", description: "Pellentesque habitant morbi tristique senectus et netus et malesuada.", status: "upcoming", displayOrder: 5, color: "#7F9CF5" },
+            { quarter: "Q2'26", title: "Milestone", description: "Nunc viverra imperdiet enim. Fusce est. Vivamus a tellus.", status: "upcoming", displayOrder: 6, color: "#9F7AEA" },
+        ];
+
+        try {
+            await Promise.all(templateItems.map(item => createMutation.mutateAsync(item)));
+            queryClient.invalidateQueries({ queryKey: ['roadmap'] });
+        } catch (error) {
+            console.error("Failed to seed data", error);
+        }
+    };
+
     return (
-        <div className="p-8 max-w-5xl mx-auto">
+        <div className="p-8 max-w-5xl mx-auto font-sans">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold">Settings</h1>
-                    <p className="text-gray-500">Manage your application configuration</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+                    <p className="text-gray-500 mt-1">Manage your application configuration and roadmap strategy.</p>
+                </div>
+                <div className="flex gap-3">
+                    <Button variant="outline" onClick={handleSeedData} className="border-gray-200 hover:bg-gray-50">
+                        <Database className="w-4 h-4 mr-2" />
+                        Load Template Data
+                    </Button>
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-lg font-semibold">Roadmap Configuration</h2>
-                    <Button onClick={() => { setEditingItem(null); setIsOpen(true); }}>
+            <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 className="text-xl font-bold">Roadmap Milestones</h2>
+                        <p className="text-sm text-gray-400">Define the journey shown on the login page.</p>
+                    </div>
+                    <Button onClick={() => { setEditingItem(null); setIsOpen(true); }} className="bg-black text-white hover:bg-gray-800 rounded-xl">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Milestone
                     </Button>
                 </div>
 
                 {isLoading ? (
-                    <div className="flex justify-center p-8">
-                        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    <div className="flex justify-center p-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-gray-200" />
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {items?.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: item.color || '#000' }}>
+                            <div key={item.id} className="relative group p-5 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:shadow-lg transition-all duration-300">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-md" style={{ backgroundColor: item.color || '#000' }}>
                                         {item.quarter}
                                     </div>
-                                    <div>
-                                        <h3 className="font-medium">{item.title}</h3>
-                                        <p className="text-sm text-gray-500">{item.description}</p>
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-lg" onClick={() => { setEditingItem(item); setIsOpen(true); }}>
+                                            <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-50 text-red-500 rounded-lg" onClick={() => deleteMutation.mutate(item.id)}>
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
                                     </div>
                                 </div>
+
+                                <h3 className="font-bold text-gray-900 mb-1">{item.title}</h3>
+                                <p className="text-xs text-gray-500 line-clamp-2 mb-4 h-8">{item.description}</p>
+
                                 <div className="flex items-center gap-2">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${item.status === 'completed' ? 'bg-green-100 text-green-700' :
                                             item.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-gray-200 text-gray-700'
+                                                'bg-gray-200 text-gray-600'
                                         }`}>
                                         {item.status}
                                     </span>
-                                    <Button variant="ghost" size="icon" onClick={() => { setEditingItem(item); setIsOpen(true); }}>
-                                        <Pencil className="w-4 h-4 text-gray-500" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => deleteMutation.mutate(item.id)}>
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
+                                    <span className="text-[10px] text-gray-400 font-mono">Ord: {item.displayOrder}</span>
                                 </div>
                             </div>
                         ))}
