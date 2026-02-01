@@ -13,7 +13,7 @@ import * as XLSX from 'xlsx';
 export default function TargetPage() {
     // Date State - Declared before useTargets to fix "used before declaration" error
     const [startDate, setStartDate] = useState<Date | undefined>(new Date(new Date().getFullYear(), 0, 1)); // Jan 1 current year
-    const [endDate, setEndDate] = useState<Date | undefined>(new Date(new Date().getFullYear(), 0, 31)); // Jan 31 current year
+    const [endDate, setEndDate] = useState<Date | undefined>(new Date(new Date().getFullYear(), 11, 31)); // Dec 31 current year
 
     // UI State
     const [searchQuery, setSearchQuery] = useState("");
