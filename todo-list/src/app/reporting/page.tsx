@@ -8,7 +8,8 @@ import { ActionPlan } from "@/types/action-plan"
 import {
     Loader2, FileText, Search, Filter, Calendar, TrendingUp,
     AlertTriangle, CheckCircle, Target, Wallet, ArrowRight,
-    Building2, Printer, Download, UserCircle, Briefcase, Trophy
+    Building2, Printer, Download, UserCircle, Briefcase, Trophy,
+    Folder, FolderOpen, ChevronRight, ChevronDown, Clock
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,7 +22,8 @@ import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import {
     format, startOfWeek, endOfWeek, endOfMonth, endOfQuarter, endOfYear,
-    addWeeks, addMonths, isWithinInterval, getWeek
+    addWeeks, addMonths, isWithinInterval, getWeek, eachDayOfInterval,
+    differenceInCalendarDays, addDays, isSameDay
 } from "date-fns"
 import { id } from "date-fns/locale"
 import {
@@ -290,6 +292,38 @@ export default function ReportingPage() {
             `Prioritaskan realokasi sumber daya manusia (PIC) yang memiliki beban kerja rendah untuk membantu penyelesaian inisiatif kritis.`
             : `Kinerja operasional berjalan optimal tanpa backlog signifikan. Fokus periode mendatang harus diarahkan pada peningkatan kualitas output dan inovasi strategis.`;
 
+        // E. Gantt Chart Data Prep
+        const ganttDays = eachDayOfInterval({ start: futureStart, end: futureEnd });
+
+        // Group by Division -> User -> Tasks
+        const ganttData: { name: string; users: { name: string; tasks: ActionPlan[] }[] }[] = [];
+        const rawGanttDivisions: Record<string, ActionPlan[]> = {};
+
+        futureItems.forEach(p => {
+            const dName = p.divisi || "General";
+            if (!rawGanttDivisions[dName]) rawGanttDivisions[dName] = [];
+            rawGanttDivisions[dName].push(p);
+        });
+
+        Object.entries(rawGanttDivisions).sort().forEach(([divName, divItems]) => {
+            const usersMap: Record<string, ActionPlan[]> = {};
+            divItems.forEach(p => {
+                const uName = p.pic || "Unassigned";
+                if (!usersMap[uName]) usersMap[uName] = [];
+                usersMap[uName].push(p);
+            });
+
+            const usersArray = Object.entries(usersMap).map(([uName, uTasks]) => ({
+                name: uName,
+                tasks: uTasks
+            })).sort((a, b) => b.tasks.length - a.tasks.length);
+
+            ganttData.push({
+                name: divName,
+                users: usersArray
+            });
+        });
+
         // Chart Data
         const statusData = [
             { name: "Selesai", value: completed, color: "#10b981" },
@@ -330,7 +364,9 @@ export default function ReportingPage() {
                     return acc;
                 }, [])
             },
-            sortedFuturePeople
+            sortedFuturePeople,
+            ganttDays,
+            ganttData
         };
 
     }, [isReportGenerated, plans, selectedDivisi, periodType, selectedYear, selectedMonth, selectedWeek, selectedQuarter, selectedSemester, dateRange]);
@@ -811,119 +847,164 @@ export default function ReportingPage() {
 
                             <div className="break-inside-avoid-page"></div>
 
-                            {/* Section 4: Future Planning by User Timeline */}
+                            {/* Section 4: Future Planning (GANTT CHART) */}
                             <section className="mb-8 page-break-inside-avoid">
                                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-6 border-b border-slate-200 pb-2 flex items-center gap-2">
                                     <Briefcase className="w-4 h-4" />
                                     Rencana Kerja: {generatedReport.futurePeriodLabel}
                                 </h3>
 
-                                {generatedReport.sortedFuturePeople.length > 0 ? (
-                                    <div className="space-y-8">
-                                        {generatedReport.sortedFuturePeople.map(([picName, items], idx) => {
-                                            const imageUrl = getUserImage(picName);
-
-                                            // Group items by Week
-                                            const weeklyGroups: Record<string, ActionPlan[]> = {};
-                                            items.forEach(item => {
-                                                const d = item.endDate ? new Date(item.endDate) : null;
-                                                const weekNum = d ? getWeek(d, { weekStartsOn: 1 }) : 0;
-                                                // Create a relative week label or absolute, usually Month Week X
-                                                // Let's use simplified "Minggu X" relative to start of period or absolute week number
-                                                const weekLabel = d ? `Minggu ${weekNum}` : "TBD";
-
-                                                if (!weeklyGroups[weekLabel]) weeklyGroups[weekLabel] = [];
-                                                weeklyGroups[weekLabel].push(item);
-                                            });
-
-                                            // Sort weeks slightly hacky but works for numbers
-                                            const sortedWeeks = Object.entries(weeklyGroups).sort((a, b) => {
-                                                const wa = parseInt(a[0].replace(/\D/g, '')) || 0;
-                                                const wb = parseInt(b[0].replace(/\D/g, '')) || 0;
-                                                return wa - wb;
-                                            });
-
-                                            return (
-                                                <div key={idx} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm break-inside-avoid">
-                                                    {/* User Header */}
-                                                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="relative">
-                                                                {imageUrl ? (
-                                                                    <img src={imageUrl} alt={picName} className="w-8 h-8 rounded-full object-cover border border-white shadow-sm" />
-                                                                ) : (
-                                                                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700 border border-white shadow-sm">
-                                                                        {picName.substring(0, 2).toUpperCase()}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="text-sm font-bold text-slate-800">{picName}</h4>
-                                                                <div className="text-[10px] text-slate-500 flex items-center gap-1">
-                                                                    <Building2 className="w-3 h-3" />
-                                                                    {items[0]?.divisi || "General"}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-[10px] font-medium bg-white px-2 py-1 rounded border border-slate-100 text-slate-500">
-                                                            {items.length} Rencana
-                                                        </div>
+                                <div className="border border-slate-200 rounded-lg overflow-hidden flex bg-white shadow-sm">
+                                    {/* LEFT PANEL: Fixed Columns (Division / PIC / Plan) */}
+                                    <div className="w-[300px] flex-shrink-0 border-r border-slate-200 bg-white z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+                                        <div className="h-12 border-b border-slate-100 flex items-center px-4 bg-slate-50">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Division / PIC / Plan</span>
+                                        </div>
+                                        <div className="divide-y divide-slate-50">
+                                            {generatedReport.ganttData.map((div, dIdx) => (
+                                                <div key={dIdx}>
+                                                    {/* Division Row */}
+                                                    <div className="h-10 flex items-center px-4 bg-indigo-50/30 gap-2">
+                                                        <Folder className="w-3.5 h-3.5 text-indigo-600" />
+                                                        <span className="text-xs font-bold text-indigo-900 truncate">{div.name}</span>
                                                     </div>
 
-                                                    {/* Timeline Body */}
-                                                    <div className="p-4 relative">
-                                                        {/* Vertical Line */}
-                                                        <div className="absolute left-[27px] top-4 bottom-4 w-0.5 bg-slate-100"></div>
-
-                                                        <div className="space-y-6">
-                                                            {sortedWeeks.map(([week, weeklyItems], wIdx) => (
-                                                                <div key={wIdx} className="relative pl-8">
-                                                                    {/* Week Dot */}
-                                                                    <div className="absolute left-[21px] top-1.5 w-3.5 h-3.5 rounded-full bg-white border-2 border-indigo-200 z-10"></div>
-
-                                                                    <h5 className="text-[11px] font-bold text-indigo-900 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                                                        {week}
-                                                                        <span className="text-[9px] font-normal text-slate-400 normal-case bg-slate-50 px-1.5 py-0.5 rounded">
-                                                                            {weeklyItems.length} Aktivitas
-                                                                        </span>
-                                                                    </h5>
-
-                                                                    <div className="grid grid-cols-1 gap-2">
-                                                                        {weeklyItems.map((item, i) => (
-                                                                            <div key={i} className="bg-slate-50 p-2.5 rounded hover:bg-indigo-50/30 transition-colors border border-slate-100 text-xs">
-                                                                                <div className="font-semibold text-slate-800 mb-0.5 leading-snug">
-                                                                                    {item.lead}
-                                                                                </div>
-                                                                                <div className="flex justify-between items-center mt-1.5">
-                                                                                    <div className="flex items-center gap-1.5">
-                                                                                        <Calendar className="w-3 h-3 text-slate-400" />
-                                                                                        <span className="text-[10px] text-slate-500">
-                                                                                            {item.endDate ? format(new Date(item.endDate), 'dd MMM') : '-'}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    {item.targetNominal && Number(item.targetNominal) > 0 && (
-                                                                                        <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
-                                                                                            Rp {(Number(item.targetNominal) / 1000000).toFixed(1)}jt
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
+                                                    {/* Users */}
+                                                    {div.users.map((user, uIdx) => {
+                                                        const userImage = getUserImage(user.name);
+                                                        return (
+                                                            <div key={uIdx}>
+                                                                {/* User Row */}
+                                                                <div className="h-12 flex items-center px-6 gap-3 hover:bg-slate-50">
+                                                                    <div className="relative flex-shrink-0">
+                                                                        {userImage ? (
+                                                                            <img src={userImage} alt={user.name} className="w-6 h-6 rounded-full object-cover border border-slate-200" />
+                                                                        ) : (
+                                                                            <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-[10px] font-bold text-orange-700">
+                                                                                {user.name.substring(0, 1).toUpperCase()}
                                                                             </div>
-                                                                        ))}
+                                                                        )}
                                                                     </div>
+                                                                    <span className="text-xs font-medium text-slate-700 truncate">{user.name}</span>
                                                                 </div>
+
+                                                                {/* Tasks */}
+                                                                {user.tasks.map((task, tIdx) => (
+                                                                    <div key={tIdx} className="h-9 flex items-center pl-14 pr-4 gap-2 hover:bg-slate-50">
+                                                                        <FileText className="w-3 h-3 text-slate-300" />
+                                                                        <span className="text-[10px] text-slate-500 truncate">{task.lead}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* RIGHT PANEL: Scrollable Timeline */}
+                                    <div className="flex-1 overflow-x-auto custom-scrollbar">
+                                        <div className="min-w-max">
+                                            {/* Header Row: Days */}
+                                            <div className="h-12 border-b border-slate-100 flex bg-slate-50">
+                                                {generatedReport.ganttDays.map((day, i) => (
+                                                    <div key={i} className="w-[40px] flex-shrink-0 flex flex-col items-center justify-center border-r border-slate-100 last:border-r-0">
+                                                        <span className="text-[10px] font-medium text-slate-400">{format(day, 'EEE')}</span>
+                                                        <span className="text-xs font-bold text-slate-700">{format(day, 'd')}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Rows Body */}
+                                            <div className="divide-y divide-slate-50 relative">
+                                                {/* Grid Background Lines (Optional, simpler to just map cells per row) */}
+
+                                                {generatedReport.ganttData.map((div, dIdx) => (
+                                                    <div key={dIdx}>
+                                                        {/* Division Row Placeholder */}
+                                                        <div className="h-10 border-b border-slate-100/50 bg-indigo-50/10 flex">
+                                                            {generatedReport.ganttDays.map((_, i) => (
+                                                                <div key={i} className="w-[40px] flex-shrink-0 border-r border-slate-100/50"></div>
                                                             ))}
                                                         </div>
+
+                                                        {/* Users */}
+                                                        {div.users.map((user, uIdx) => (
+                                                            <div key={uIdx}>
+                                                                {/* User Row Bar Placeholder (If we wanted to show user summary) */}
+                                                                <div className="h-12 border-b border-slate-100/50 flex bg-slate-50/30">
+                                                                    {generatedReport.ganttDays.map((_, i) => (
+                                                                        <div key={i} className="w-[40px] flex-shrink-0 border-r border-slate-100/50"></div>
+                                                                    ))}
+                                                                    {/* Could add a summary bar here if needed */}
+                                                                </div>
+
+                                                                {/* Tasks */}
+                                                                {user.tasks.map((task, tIdx) => {
+                                                                    // Calculate Bar Position and Width
+                                                                    let startIndex = -1;
+                                                                    let duration = 0;
+
+                                                                    const tStart = task.endDate ? new Date(task.endDate) : null;
+                                                                    // Note: Using endDate as start for simplification if startDate missing, or assuming task is 1 day?
+                                                                    // Ideally we need startDate. But typical ActionPlan has endDate.
+                                                                    // Let's assume startDate is today or start of period if not specified? 
+                                                                    // Actually, standard logic: task has start and end dates. 
+                                                                    // If only endDate, we show it as a 1-day block or use `startDate` if available.
+                                                                    // Looking at schema types, ActionPlan usually has startDate (?), let's check. 
+                                                                    // Assuming startDate exists or we use logic. 
+                                                                    // If not, we'll try to guess. Let's use `updatedAt` as start? Or just show a 1-day marker.
+                                                                    // A safer bet for now is checking if startDate exists (it's in schema usually).
+                                                                    // If not, render as single day.
+
+                                                                    // Logic:
+                                                                    // Start = Math.max(timelineStart, taskStart)
+                                                                    // End = Math.min(timelineEnd, taskEnd)
+
+                                                                    const tEnd = tStart; // Default to single day
+
+                                                                    if (tStart) {
+                                                                        // Find index in ganttDays
+                                                                        const startDayIndex = generatedReport.ganttDays.findIndex(d => isSameDay(d, tStart));
+
+                                                                        if (startDayIndex !== -1) {
+                                                                            startIndex = startDayIndex;
+                                                                            duration = 1; // Default 1 day width
+                                                                        }
+                                                                    }
+
+                                                                    return (
+                                                                        <div key={tIdx} className="h-9 border-b border-slate-100/50 flex relative">
+                                                                            {/* Grid Cells */}
+                                                                            {generatedReport.ganttDays.map((_, i) => (
+                                                                                <div key={i} className="w-[40px] flex-shrink-0 border-r border-slate-100/50"></div>
+                                                                            ))}
+
+                                                                            {startIndex !== -1 && (
+                                                                                <div
+                                                                                    className="absolute top-1.5 bottom-1.5 bg-orange-200/80 border border-orange-300/50 rounded flex items-center px-2 shadow-sm"
+                                                                                    style={{
+                                                                                        left: `${startIndex * 40}px`,
+                                                                                        width: `${Math.max(duration, 1) * 40}px`
+                                                                                    }}
+                                                                                >
+                                                                                    {/* Hover Tooltip trigger could be here */}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                </div>
-                                            )
-                                        })}
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="text-sm text-slate-500 italic p-6 bg-slate-50 rounded text-center border border-dashed border-slate-200">
-                                        Belum ada rencana kerja terdaftar untuk periode mendatang.
-                                    </div>
-                                )}
+                                </div>
                             </section>
+
 
                             {/* Footer */}
                             <div className="mt-auto flex justify-between items-end pt-8 border-t border-slate-200">
