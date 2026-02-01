@@ -52,13 +52,27 @@ export default function ActionPlanPage() {
     const [currentPage, setCurrentPage] = React.useState(1)
     const [pageSize, setPageSize] = React.useState<number | 'all'>(50)
 
-    // Sync Dropdowns to DateRange
-    React.useEffect(() => {
-        if (selectedYear !== 'all') {
-            const year = parseInt(selectedYear)
-            if (selectedMonth !== 'all') {
+    // Sync Dropdowns to DateRange - REFACTORED to Event Handlers to avoid conflicts
+    // React.useEffect removed to allow manual date picker override
+
+    const handleYearChange = (year: string) => {
+        setSelectedYear(year)
+        // Reset to all months if switching to all years, or keep current month if valid? 
+        // Let's keep it simple: if year changes, re-evaluate range based on current month
+        updateDateRange(year, selectedMonth)
+    }
+
+    const handleMonthChange = (month: string) => {
+        setSelectedMonth(month)
+        updateDateRange(selectedYear, month)
+    }
+
+    const updateDateRange = (yearStr: string, monthStr: string) => {
+        if (yearStr !== 'all') {
+            const year = parseInt(yearStr)
+            if (monthStr !== 'all') {
                 // Specific Month
-                const month = parseInt(selectedMonth) - 1
+                const month = parseInt(monthStr) - 1
                 setDateRange({
                     from: startOfMonth(new Date(year, month)),
                     to: endOfMonth(new Date(year, month)),
@@ -74,8 +88,18 @@ export default function ActionPlanPage() {
             // All Years - No Filter
             setDateRange(undefined)
         }
-        setCurrentPage(1) // Reset page on filter change
-    }, [selectedYear, selectedMonth])
+        setCurrentPage(1)
+    }
+
+    const handleManualDateChange = (range: DateRange | undefined) => {
+        setDateRange(range)
+        // Optional: Reset dropdowns to 'all' to show we are in custom mode, 
+        // or just leave them. Resetting avoids confusion.
+        if (range) {
+            setSelectedYear('all')
+            setSelectedMonth('all')
+        }
+    }
 
     // Fetch Plans
     const { data: plans, isLoading } = useQuery({
@@ -520,7 +544,13 @@ export default function ActionPlanPage() {
 
                     {/* Right Side: Date Actions & Grid Controls */}
                     <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-end">
-                        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <DatePickerWithRange
+                            date={dateRange}
+                            setDate={handleManualDateChange}
+                            className="h-9"
+                        />
+
+                        <Select value={selectedMonth} onValueChange={handleMonthChange}>
                             <SelectTrigger className="w-[110px] h-9 border-none bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg text-xs font-medium">
                                 <SelectValue placeholder="Month" />
                             </SelectTrigger>
@@ -534,7 +564,7 @@ export default function ActionPlanPage() {
                             </SelectContent>
                         </Select>
 
-                        <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <Select value={selectedYear} onValueChange={handleYearChange}>
                             <SelectTrigger className="w-[80px] h-9 border-none bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg text-xs font-medium">
                                 <SelectValue placeholder="Year" />
                             </SelectTrigger>
