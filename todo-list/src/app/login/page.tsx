@@ -140,7 +140,18 @@ export default function LoginPage() {
                                                         </span>
                                                     </div>
                                                     <h3 className="text-sm lg:text-base font-bold text-gray-900 leading-tight truncate">{item.title}</h3>
-                                                    <p className="text-xs text-gray-500 leading-tight mt-1 line-clamp-2">{item.description}</p>
+                                                    <div className="text-xs text-gray-500 leading-tight mt-1 line-clamp-2">
+                                                        {item.description.split('\n').map((line, i) => (
+                                                            <p key={i}>
+                                                                {line.includes(':') ? (
+                                                                    <>
+                                                                        <strong className="text-gray-700">{line.split(':')[0]}:</strong>
+                                                                        {line.split(':').slice(1).join(':')}
+                                                                    </>
+                                                                ) : line}
+                                                            </p>
+                                                        ))}
+                                                    </div>
                                                 </div>
 
                                                 {/* Expanded Hover Card (Absolute overlay) */}
@@ -169,9 +180,18 @@ export default function LoginPage() {
                                                             <h3 className="text-base lg:text-lg font-bold text-gray-900 leading-tight mb-2 text-orange-600">
                                                                 {item.title}
                                                             </h3>
-                                                            <p className="text-sm text-gray-600 leading-relaxed">
-                                                                {item.description}
-                                                            </p>
+                                                            <div className="text-sm text-gray-600 leading-relaxed">
+                                                                {item.description.split('\n').map((line, i) => (
+                                                                    <p key={i} className="mb-1">
+                                                                        {line.includes(':') ? (
+                                                                            <>
+                                                                                <strong className="text-gray-900">{line.split(':')[0]}:</strong>
+                                                                                {line.split(':').slice(1).join(':')}
+                                                                            </>
+                                                                        ) : line}
+                                                                    </p>
+                                                                ))}
+                                                            </div>
                                                         </motion.div>
                                                     )}
                                                 </AnimatePresence>
