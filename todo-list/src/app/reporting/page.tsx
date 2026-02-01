@@ -148,15 +148,29 @@ export default function ReportingPage() {
 
         const { start, end } = getCalculatedDateRange();
 
+        // Helper: Parse Date Robustly
+        const parseDate = (dateStr: string | undefined | null): Date | null => {
+            if (!dateStr) return null;
+            // 1. Try standard Date constructor (ISO, YYYY-MM-DD)
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) return d;
+            // 2. Try DD/MM/YYYY or DD-MM-YYYY (Common in ID)
+            const parts = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+            if (parts) {
+                return new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1]));
+            }
+            return null;
+        };
+
         // A. Filter Main Data (Current Period)
         const filtered = plans.filter(p => {
             if (selectedDivisi !== "all") {
-                // Precise match for Divisi
                 if (p.divisi !== selectedDivisi) return false;
             }
-            if (!p.dueDate) return false;
-            const d = new Date(p.dueDate);
-            if (isNaN(d.getTime())) return false;
+
+            const d = parseDate(p.dueDate);
+            if (!d) return false;
+
             return isWithinInterval(d, { start, end });
         });
 
@@ -230,8 +244,10 @@ export default function ReportingPage() {
             if (selectedDivisi !== "all") {
                 if (p.divisi !== selectedDivisi) return false;
             }
-            if (!p.dueDate) return false;
-            const d = new Date(p.dueDate);
+
+            const d = parseDate(p.dueDate);
+            if (!d) return false;
+
             return d > end && d <= futureEnd; // STRICTLY AFTER current period end
         });
 
