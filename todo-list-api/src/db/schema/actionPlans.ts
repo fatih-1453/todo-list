@@ -40,6 +40,7 @@ export const actionPlans = pgTable('action_plans', {
     // Additional Info
     targetReceiver: text('target_receiver'), // Target Penerima
     output: text('output'), // Output (previously notes/catatan)
+    keterangan: text('keterangan'), // Keterangan/Notes (editable in table)
     risk: text('risk'), // SDM & Risk analysis
 
     createdAt: timestamp('created_at').defaultNow(),

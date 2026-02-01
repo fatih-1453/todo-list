@@ -272,8 +272,8 @@ export default function ActionPlanPage() {
         }
     }
 
-    const handleUpdateOutput = (id: number, value: string) => {
-        updatePlanMutation.mutate({ id, data: { output: value } })
+    const handleUpdateKeterangan = (id: number, value: string) => {
+        updatePlanMutation.mutate({ id, data: { keterangan: value } })
     }
 
     const handleUpdate = (plan: ActionPlan) => {
@@ -551,9 +551,9 @@ export default function ActionPlanPage() {
                             </th>
                             <th className="px-4 py-3 border-b border-gray-100 text-left w-20 font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                             {[
-                                "No", "Nama", "Start Date", "End Date",
+                                "No", "Nama", "Output", "Start Date", "End Date",
                                 "Progress", "Status",
-                                "Target", "Real", "Output", "Indikator", "Lokasi", "Target Penerima", "Divisi"
+                                "Target", "Real", "Keterangan", "Indikator", "Lokasi", "Target Penerima", "Divisi"
                             ].map((h, i) => (
                                 <th key={i} className="px-4 py-3 text-left font-semibold text-gray-500 border-b border-gray-100 uppercase tracking-wider whitespace-nowrap">
                                     {h}
@@ -594,6 +594,9 @@ export default function ActionPlanPage() {
 
                                         <td className="px-4 py-3 text-gray-500">{globalIndex}</td>
                                         <td className="px-4 py-3 font-medium text-gray-900">{p.pic}</td>
+
+                                        {/* Output Column (read-only from upload, with text wrap) */}
+                                        <td className="px-4 py-3 text-gray-600 max-w-[200px] whitespace-normal break-words" title={p.output}>{p.output || '-'}</td>
 
                                         {/* Smart Dates */}
                                         <td className={`px-4 py-3 whitespace-nowrap ${isRowToday ? 'font-bold text-amber-900 bg-amber-200/50 rounded-md px-2' : 'text-gray-500'}`}>
@@ -641,14 +644,14 @@ export default function ActionPlanPage() {
                                             />
                                         </td>
 
-                                        {/* Editable Output Column */}
+                                        {/* Editable Keterangan Column */}
                                         <td className="px-4 py-3 max-w-[250px]">
                                             <textarea
                                                 className="w-full min-w-[150px] px-2 py-1 bg-transparent border border-transparent hover:border-gray-200 focus:border-indigo-500 rounded text-xs text-gray-600 transition-colors focus:outline-none resize-none whitespace-normal break-words"
-                                                defaultValue={p.output || ''}
-                                                placeholder="Tambah output..."
+                                                defaultValue={p.keterangan || ''}
+                                                placeholder="Tambah keterangan..."
                                                 rows={2}
-                                                onBlur={(e) => handleUpdateOutput(p.id, e.target.value)}
+                                                onBlur={(e) => handleUpdateKeterangan(p.id, e.target.value)}
                                             />
                                         </td>
 
