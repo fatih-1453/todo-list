@@ -4,7 +4,6 @@
 import React, { useState, useMemo, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
-import { departmentService } from "@/services/departmentService"
 import { ActionPlan } from "@/types/action-plan"
 import {
     Loader2, FileText, Search, Filter, Calendar, TrendingUp,
@@ -36,7 +35,7 @@ import { toast } from "sonner"
 // Types
 type PeriodType = 'weekly' | 'monthly' | 'quarterly' | 'semester' | 'yearly';
 
-interface DeptPerformance {
+interface DivisiPerformance {
     name: string;
     total: number;
     completed: number;
@@ -48,7 +47,7 @@ interface DeptPerformance {
 
 interface PersonPerformance {
     name: string;
-    dept: string;
+    divisi: string;
     total: number;
     completed: number;
     pending: number;
@@ -65,15 +64,17 @@ export default function ReportingPage() {
         refetchInterval: 60000
     })
 
-    const { data: departments, isLoading: isLoadingDepts } = useQuery({
-        queryKey: ["departments"],
-        queryFn: () => departmentService.getAll(),
-    })
+    // Extract Unique Divisions from Plans
+    const uniqueDivisions = useMemo(() => {
+        if (!plans) return [];
+        const divs = new Set(plans.map(p => p.divisi).filter((d): d is string => !!d));
+        return Array.from(divs).sort();
+    }, [plans]);
 
     // -------------------------------------------------------------------------
     // 2. State Management
     // -------------------------------------------------------------------------
-    const [selectedDept, setSelectedDept] = useState<string>("all")
+    const [selectedDivisi, setSelectedDivisi] = useState<string>("all")
     const [periodType, setPeriodType] = useState<PeriodType>("monthly")
 
     const currentYear = new Date().getFullYear()
@@ -149,9 +150,9 @@ export default function ReportingPage() {
 
         // A. Filter Main Data (Current Period)
         const filtered = plans.filter(p => {
-            if (selectedDept !== "all") {
-                const deptMatch = p.divisi === selectedDept || p.department === selectedDept;
-                if (!deptMatch) return false;
+            if (selectedDivisi !== "all") {
+                // Precise match for Divisi
+                if (p.divisi !== selectedDivisi) return false;
             }
             if (!p.dueDate) return false;
             const d = new Date(p.dueDate);
@@ -167,7 +168,7 @@ export default function ReportingPage() {
         let totalRealization = 0;
 
         // --- Detailed Sub-Aggregators ---
-        const deptMap: Record<string, DeptPerformance> = {};
+        const divisiMap: Record<string, DivisiPerformance> = {};
         const personMap: Record<string, PersonPerformance> = {};
 
         filtered.forEach(p => {
@@ -179,30 +180,30 @@ export default function ReportingPage() {
             totalBudget += t;
             totalRealization += r;
 
-            // Map Dept
-            const dName = p.divisi || p.department || "General";
-            if (!deptMap[dName]) deptMap[dName] = { name: dName, total: 0, completed: 0, pending: 0, score: 0, budget: 0, realization: 0 };
-            deptMap[dName].total++;
-            if (isDone) deptMap[dName].completed++; else deptMap[dName].pending++;
-            deptMap[dName].budget += t;
-            deptMap[dName].realization += r;
+            // Map Divisi
+            const dName = p.divisi || "General";
+            if (!divisiMap[dName]) divisiMap[dName] = { name: dName, total: 0, completed: 0, pending: 0, score: 0, budget: 0, realization: 0 };
+            divisiMap[dName].total++;
+            if (isDone) divisiMap[dName].completed++; else divisiMap[dName].pending++;
+            divisiMap[dName].budget += t;
+            divisiMap[dName].realization += r;
 
             // Map Person
             const pName = p.pic || "Unassigned";
-            if (!personMap[pName]) personMap[pName] = { name: pName, dept: dName, total: 0, completed: 0, pending: 0, score: 0 };
+            if (!personMap[pName]) personMap[pName] = { name: pName, divisi: dName, total: 0, completed: 0, pending: 0, score: 0 };
             personMap[pName].total++;
             if (isDone) personMap[pName].completed++; else personMap[pName].pending++;
         });
 
         // Calc Scores
-        Object.values(deptMap).forEach(d => {
+        Object.values(divisiMap).forEach(d => {
             d.score = d.total > 0 ? Math.round((d.completed / d.total) * 100) : 0;
         });
         Object.values(personMap).forEach(p => {
             p.score = p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
         });
 
-        const sortedDepts = Object.values(deptMap).sort((a, b) => b.score - a.score);
+        const sortedDivisions = Object.values(divisiMap).sort((a, b) => b.score - a.score);
         const sortedPeople = Object.values(personMap).sort((a, b) => b.score - a.score);
 
         const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -226,34 +227,34 @@ export default function ReportingPage() {
         }
 
         const futureItems = plans.filter(p => {
-            if (selectedDept !== "all") {
-                if (p.divisi !== selectedDept && p.department !== selectedDept) return false;
+            if (selectedDivisi !== "all") {
+                if (p.divisi !== selectedDivisi) return false;
             }
             if (!p.dueDate) return false;
             const d = new Date(p.dueDate);
             return d > end && d <= futureEnd; // STRICTLY AFTER current period end
         });
 
-        // Group Future Items by Dept for detailed view
-        const futureByDept: Record<string, ActionPlan[]> = {};
+        // Group Future Items by Divisi for detailed view
+        const futureByDivisi: Record<string, ActionPlan[]> = {};
         futureItems.forEach(p => {
-            const dName = p.divisi || p.department || "General";
-            if (!futureByDept[dName]) futureByDept[dName] = [];
-            futureByDept[dName].push(p);
+            const dName = p.divisi || "General";
+            if (!futureByDivisi[dName]) futureByDivisi[dName] = [];
+            futureByDivisi[dName].push(p);
         });
 
         // AI Analysis Simulation
-        const topDept = sortedDepts.length > 0 ? sortedDepts[0] : null;
-        const lowDept = sortedDepts.length > 0 ? sortedDepts[sortedDepts.length - 1] : null;
+        const topDiv = sortedDivisions.length > 0 ? sortedDivisions[0] : null;
+        const lowDiv = sortedDivisions.length > 0 ? sortedDivisions[sortedDivisions.length - 1] : null;
 
         const analysisText = `Berdasarkan evaluasi komprehensif periode ini, organisasi mencapai tingkat efektivitas ${completionRate}%. ` +
-            (topDept ? `Apresiasi diberikan kepada Departemen ${topDept.name} yang memimpin dengan skor kinerja ${topDept.score}%. ` : "") +
-            (lowDept && lowDept.score < 50 ? `Perhatian khusus diperlukan untuk Departemen ${lowDept.name} yang baru mencapai ${lowDept.score}%, terindikasi adanya hambatan eksekusi. ` : "") +
+            (topDiv ? `Apresiasi diberikan kepada Divisi ${topDiv.name} yang memimpin dengan skor kinerja ${topDiv.score}%. ` : "") +
+            (lowDiv && lowDiv.score < 50 ? `Perhatian khusus diperlukan untuk Divisi ${lowDiv.name} yang baru mencapai ${lowDiv.score}%, terindikasi adanya hambatan eksekusi. ` : "") +
             `Secara finansial, realisasi anggaran adalah ${totalBudget > 0 ? Math.round((totalRealization / totalBudget) * 100) : 0}% dari target.`;
 
         const mitigationText = pending > 0
             ? `Terdapat ${pending} rencana aksi yang meleset dari target waktu (Overdue). ` +
-            `Disarankan segera melakukan Root Cause Analysis (RCA) pada level departemen, khususnya divisi dengan backlog tertinggi. ` +
+            `Disarankan segera melakukan Root Cause Analysis (RCA) pada level divisi, khususnya divisi dengan backlog tertinggi. ` +
             `Prioritaskan realokasi sumber daya manusia (PIC) yang memiliki beban kerja rendah untuk membantu penyelesaian inisiatif kritis.`
             : `Kinerja operasional berjalan optimal tanpa backlog signifikan. Fokus periode mendatang harus diarahkan pada peningkatan kualitas output dan inovasi strategis.`;
 
@@ -269,12 +270,12 @@ export default function ReportingPage() {
             total, completed, pending, completionRate,
             totalBudget, totalRealization,
             analysisText, mitigationText,
-            evaluationItems, futureItems, futureByDept,
+            evaluationItems, futureItems, futureByDivisi,
             statusData,
-            sortedDepts, sortedPeople
+            sortedDivisions, sortedPeople
         };
 
-    }, [isReportGenerated, plans, selectedDept, periodType, selectedYear, selectedMonth, selectedWeek, selectedQuarter, selectedSemester, dateRange]);
+    }, [isReportGenerated, plans, selectedDivisi, periodType, selectedYear, selectedMonth, selectedWeek, selectedQuarter, selectedSemester, dateRange]);
 
 
     const handleGenerate = () => {
@@ -297,11 +298,6 @@ export default function ReportingPage() {
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-            // If height > A4 page, we might need multi-page? 
-            // For now, simplify to fit or simple multi-page logic
-            // But user wants "very comprehensive", implies long.
-            // basic jsPDF addImage squeezes, let's use auto-paging logic if possible or just one long image split
-
             if (pdfHeight > 297) {
                 let heightLeft = pdfHeight;
                 let position = 0;
@@ -320,7 +316,7 @@ export default function ReportingPage() {
                 pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
             }
 
-            pdf.save(`Laporan_Detail_${periodType}_${selectedDept}.pdf`);
+            pdf.save(`Laporan_Detail_${periodType}_${selectedDivisi}.pdf`);
             toast.success("PDF Detail Berhasil diunduh!", { id: toastId });
         } catch (e) {
             console.error(e)
@@ -357,17 +353,17 @@ export default function ReportingPage() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-                        {/* Department Select */}
+                        {/* Division Select (Dynamic) */}
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-500 uppercase">Departemen</label>
-                            <Select value={selectedDept} onValueChange={setSelectedDept}>
+                            <label className="text-xs font-semibold text-slate-500 uppercase">Divisi</label>
+                            <Select value={selectedDivisi} onValueChange={setSelectedDivisi}>
                                 <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Pilih Departemen" />
+                                    <SelectValue placeholder="Pilih Divisi" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Semua Departemen</SelectItem>
-                                    {departments?.map(d => (
-                                        <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                                    <SelectItem value="all">Semua Divisi</SelectItem>
+                                    {uniqueDivisions.map(d => (
+                                        <SelectItem key={d} value={d}>{d}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -504,7 +500,7 @@ export default function ReportingPage() {
                                     <h1 className="text-3xl font-bold text-slate-900 uppercase tracking-widest mb-2 font-serif">Laporan Evaluasi Kinerja</h1>
                                     <div className="flex items-center gap-2 text-slate-500 font-medium">
                                         <Building2 className="w-4 h-4" />
-                                        <span>{selectedDept === 'all' ? 'Seluruh Departemen' : selectedDept}</span>
+                                        <span>{selectedDivisi === 'all' ? 'Seluruh Divisi' : selectedDivisi}</span>
                                     </div>
                                 </div>
                                 <div className="text-right">
@@ -537,17 +533,17 @@ export default function ReportingPage() {
                                 </section>
                             </div>
 
-                            {/* Section 2: Department Performance Matrix */}
+                            {/* Section 2: Division Performance Matrix */}
                             <section className="mb-10">
                                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
                                     <Building2 className="w-4 h-4" />
-                                    Evaluasi Per Departemen
+                                    Evaluasi Per Divisi
                                 </h3>
                                 <div className="overflow-hidden border rounded-lg">
                                     <table className="min-w-full divide-y divide-slate-200">
                                         <thead className="bg-slate-50">
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Departemen</th>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Divisi</th>
                                                 <th className="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Skor Kinerja</th>
                                                 <th className="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Total Misi</th>
                                                 <th className="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Selesai</th>
@@ -555,23 +551,23 @@ export default function ReportingPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-slate-200">
-                                            {generatedReport.sortedDepts.length > 0 ? generatedReport.sortedDepts.map((dept, idx) => (
+                                            {generatedReport.sortedDivisions.length > 0 ? generatedReport.sortedDivisions.map((div, idx) => (
                                                 <tr key={idx}>
-                                                    <td className="px-4 py-2 whitespace-nowrap text-xs font-medium text-slate-900">{dept.name}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-xs font-medium text-slate-900">{div.name}</td>
                                                     <td className="px-4 py-2 whitespace-nowrap text-center">
-                                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${dept.score >= 80 ? 'bg-green-100 text-green-800' :
-                                                                dept.score >= 50 ? 'bg-yellow-100 text-yellow-800' :
-                                                                    'bg-red-100 text-red-800'
+                                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${div.score >= 80 ? 'bg-green-100 text-green-800' :
+                                                            div.score >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                                                                'bg-red-100 text-red-800'
                                                             }`}>
-                                                            {dept.score}%
+                                                            {div.score}%
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-slate-500">{dept.total}</td>
-                                                    <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-emerald-600 font-bold">{dept.completed}</td>
-                                                    <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-red-600 font-bold">{dept.pending}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-slate-500">{div.total}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-emerald-600 font-bold">{div.completed}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-red-600 font-bold">{div.pending}</td>
                                                 </tr>
                                             )) : (
-                                                <tr><td colSpan={5} className="text-center py-4 text-xs">Tidak ada data departemen.</td></tr>
+                                                <tr><td colSpan={5} className="text-center py-4 text-xs">Tidak ada data divisi.</td></tr>
                                             )}
                                         </tbody>
                                     </table>
@@ -593,7 +589,7 @@ export default function ReportingPage() {
                                                 </div>
                                                 <div>
                                                     <div className="text-xs font-bold text-slate-800">{person.name}</div>
-                                                    <div className="text-[10px] text-slate-500">{person.dept}</div>
+                                                    <div className="text-[10px] text-slate-500">{person.divisi}</div>
                                                 </div>
                                             </div>
                                             <div className="text-right">
@@ -612,20 +608,20 @@ export default function ReportingPage() {
 
                             <div className="break-inside-avoid-page"></div>
 
-                            {/* Section 4: Future Planning by Dept */}
+                            {/* Section 4: Future Planning by Divisi */}
                             <section className="mb-8">
                                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
                                     <Briefcase className="w-4 h-4" />
                                     Rencana Kerja: {generatedReport.futurePeriodLabel}
                                 </h3>
 
-                                {Object.keys(generatedReport.futureByDept).length > 0 ? (
+                                {Object.keys(generatedReport.futureByDivisi).length > 0 ? (
                                     <div className="space-y-6">
-                                        {Object.entries(generatedReport.futureByDept).map(([deptName, items], idx) => (
+                                        {Object.entries(generatedReport.futureByDivisi).map(([divName, items], idx) => (
                                             <div key={idx} className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
                                                 <h4 className="text-xs font-bold text-indigo-800 uppercase mb-3 flex items-center gap-2">
                                                     <Building2 className="w-3 h-3" />
-                                                    {deptName}
+                                                    {divName}
                                                 </h4>
                                                 <ul className="space-y-2">
                                                     {items.map((item, i) => (
