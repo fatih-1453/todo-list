@@ -193,8 +193,8 @@ export default function LoginPage() {
                 <div className="max-w-sm mx-auto w-full">
                     {/* Header */}
                     <div className="mb-10 text-left">
-                        <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center mb-6 shadow-xl shadow-black/20">
-                            <span className="text-white font-bold text-2xl">Z</span>
+                        <div className="w-16 h-16 relative mb-6">
+                            <img src="/logo.png" alt="Company Logo" className="w-full h-full object-contain drop-shadow-md" />
                         </div>
                         <h1 className="text-3xl font-bold mb-2 text-gray-900">Welcome Back</h1>
                         <p className="text-gray-500">Please enter your details to sign in.</p>
