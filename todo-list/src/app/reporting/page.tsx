@@ -9,7 +9,7 @@ import { ActionPlan } from "@/types/action-plan"
 import {
     Loader2, FileText, Search, Filter, Calendar, TrendingUp,
     AlertTriangle, CheckCircle, Target, Wallet, ArrowRight,
-    Building2, Printer, Download
+    Building2, Printer, Download, UserCircle, Briefcase
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,26 +21,38 @@ import {
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import {
-    format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-    startOfQuarter, endOfQuarter, startOfYear, endOfYear,
+    format, startOfWeek, endOfWeek, endOfMonth, endOfQuarter, endOfYear,
     addWeeks, addMonths, isWithinInterval, getWeek
 } from "date-fns"
 import { id } from "date-fns/locale"
 import {
-    PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip, Legend,
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar
+    PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip, Legend
 } from "recharts"
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { toast } from "sonner"
 
 // Types
 type PeriodType = 'weekly' | 'monthly' | 'quarterly' | 'semester' | 'yearly';
 
-interface TimelineItem {
-    period: string;
-    items: ActionPlan[];
+interface DeptPerformance {
+    name: string;
+    total: number;
+    completed: number;
+    pending: number;
+    score: number;
+    budget: number;
+    realization: number;
+}
+
+interface PersonPerformance {
+    name: string;
+    dept: string;
+    total: number;
+    completed: number;
+    pending: number;
+    score: number;
 }
 
 export default function ReportingPage() {
@@ -89,12 +101,6 @@ export default function ReportingPage() {
                 if (dateRange?.from && dateRange?.to) {
                     return { start: dateRange.from, end: dateRange.to };
                 }
-                // Fallback to week number logic if no date range picked (custom logic needed for exact week mapping)
-                // Using simple approximation or just rely on DatePicker for weekly to be precise
-                // Let's assume user uses Date Picker for Weekly as requested "sebagai opsi dari minggu gunakan date picker"
-
-                // If using dropdown week:
-                // Simple ISO week estimation
                 const simpleDate = new Date(year, 0, 1 + (parseInt(selectedWeek) - 1) * 7);
                 start = startOfWeek(simpleDate, { weekStartsOn: 1 });
                 end = endOfWeek(simpleDate, { weekStartsOn: 1 });
@@ -141,15 +147,12 @@ export default function ReportingPage() {
 
         const { start, end } = getCalculatedDateRange();
 
-        // Filter Data
+        // A. Filter Main Data (Current Period)
         const filtered = plans.filter(p => {
-            // Dept Filter
             if (selectedDept !== "all") {
                 const deptMatch = p.divisi === selectedDept || p.department === selectedDept;
                 if (!deptMatch) return false;
             }
-
-            // Date Filter
             if (!p.dueDate) return false;
             const d = new Date(p.dueDate);
             if (isNaN(d.getTime())) return false;
@@ -163,6 +166,10 @@ export default function ReportingPage() {
         let totalBudget = 0;
         let totalRealization = 0;
 
+        // --- Detailed Sub-Aggregators ---
+        const deptMap: Record<string, DeptPerformance> = {};
+        const personMap: Record<string, PersonPerformance> = {};
+
         filtered.forEach(p => {
             const t = Number(p.targetNominal) || 0;
             const r = Number(p.realNominal) || 0;
@@ -171,11 +178,36 @@ export default function ReportingPage() {
             if (isDone) completed++; else pending++;
             totalBudget += t;
             totalRealization += r;
+
+            // Map Dept
+            const dName = p.divisi || p.department || "General";
+            if (!deptMap[dName]) deptMap[dName] = { name: dName, total: 0, completed: 0, pending: 0, score: 0, budget: 0, realization: 0 };
+            deptMap[dName].total++;
+            if (isDone) deptMap[dName].completed++; else deptMap[dName].pending++;
+            deptMap[dName].budget += t;
+            deptMap[dName].realization += r;
+
+            // Map Person
+            const pName = p.pic || "Unassigned";
+            if (!personMap[pName]) personMap[pName] = { name: pName, dept: dName, total: 0, completed: 0, pending: 0, score: 0 };
+            personMap[pName].total++;
+            if (isDone) personMap[pName].completed++; else personMap[pName].pending++;
         });
+
+        // Calc Scores
+        Object.values(deptMap).forEach(d => {
+            d.score = d.total > 0 ? Math.round((d.completed / d.total) * 100) : 0;
+        });
+        Object.values(personMap).forEach(p => {
+            p.score = p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
+        });
+
+        const sortedDepts = Object.values(deptMap).sort((a, b) => b.score - a.score);
+        const sortedPeople = Object.values(personMap).sort((a, b) => b.score - a.score);
 
         const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-        // Timeline: Evaluation (Not Done in current period)
+        // B. Timeline: Evaluation (Not Done in current period)
         const evaluationItems = filtered.filter(p => {
             const t = Number(p.targetNominal) || 0;
             const r = Number(p.realNominal) || 0;
@@ -183,8 +215,7 @@ export default function ReportingPage() {
             return !isDone;
         });
 
-        // Timeline: Future Plans (Next Week/Month)
-        // Need to query original 'plans' again for future dates
+        // C. Timeline: Future Plans (Next Week/Month)
         let futureStart: Date, futureEnd: Date;
         if (periodType === 'weekly') {
             futureStart = addWeeks(end, 0); // Start from next day basically
@@ -203,23 +234,30 @@ export default function ReportingPage() {
             return d > end && d <= futureEnd; // STRICTLY AFTER current period end
         });
 
-        // AI Analysis Simulation
-        const getTrend = () => {
-            if (completionRate > 80) return "POSITIF";
-            if (completionRate > 50) return "STABIL";
-            return "PERLU PERHATIAN";
-        };
+        // Group Future Items by Dept for detailed view
+        const futureByDept: Record<string, ActionPlan[]> = {};
+        futureItems.forEach(p => {
+            const dName = p.divisi || p.department || "General";
+            if (!futureByDept[dName]) futureByDept[dName] = [];
+            futureByDept[dName].push(p);
+        });
 
-        const analysisText = `Berdasarkan data periode ini, kinerja departemen menunjukkan tren ${getTrend()}. ` +
-            `Tingkat penyelesaian tercatat sebesar ${completionRate}% dari total ${total} inisiatif. ` +
-            `Efisiensi anggaran berada di angka ${totalBudget > 0 ? Math.round((totalRealization / totalBudget) * 100) : 0}%. ` +
-            (pending > 0 ? `Terdapat ${pending} item yang memerlukan atensi khusus untuk memastikan target tahunan tercapai.` : "Seluruh target periode ini telah terpenuhi dengan baik.");
+        // AI Analysis Simulation
+        const topDept = sortedDepts.length > 0 ? sortedDepts[0] : null;
+        const lowDept = sortedDepts.length > 0 ? sortedDepts[sortedDepts.length - 1] : null;
+
+        const analysisText = `Berdasarkan evaluasi komprehensif periode ini, organisasi mencapai tingkat efektivitas ${completionRate}%. ` +
+            (topDept ? `Apresiasi diberikan kepada Departemen ${topDept.name} yang memimpin dengan skor kinerja ${topDept.score}%. ` : "") +
+            (lowDept && lowDept.score < 50 ? `Perhatian khusus diperlukan untuk Departemen ${lowDept.name} yang baru mencapai ${lowDept.score}%, terindikasi adanya hambatan eksekusi. ` : "") +
+            `Secara finansial, realisasi anggaran adalah ${totalBudget > 0 ? Math.round((totalRealization / totalBudget) * 100) : 0}% dari target.`;
 
         const mitigationText = pending > 0
-            ? `Disarankan untuk melakukan review mingguan terhadap ${pending} item tertunda. Identifikasi bottleneck pada sumber daya dan alokasikan ulang jika diperlukan. Pastikan koordinasi lintas divisi ditingkatkan.`
-            : `Pertahankan momentum kinerja saat ini. Fokus dapat dialihkan pada optimasi kualitas output dan perencanaan periode berikutnya.`;
+            ? `Terdapat ${pending} rencana aksi yang meleset dari target waktu (Overdue). ` +
+            `Disarankan segera melakukan Root Cause Analysis (RCA) pada level departemen, khususnya divisi dengan backlog tertinggi. ` +
+            `Prioritaskan realokasi sumber daya manusia (PIC) yang memiliki beban kerja rendah untuk membantu penyelesaian inisiatif kritis.`
+            : `Kinerja operasional berjalan optimal tanpa backlog signifikan. Fokus periode mendatang harus diarahkan pada peningkatan kualitas output dan inovasi strategis.`;
 
-        // Chart Data construction
+        // Chart Data
         const statusData = [
             { name: "Selesai", value: completed, color: "#10b981" },
             { name: "Dalam Proses", value: pending, color: "#f59e0b" },
@@ -227,11 +265,13 @@ export default function ReportingPage() {
 
         return {
             periodLabel: format(start, "dd MMM yyyy") + " - " + format(end, "dd MMM yyyy"),
+            futurePeriodLabel: format(futureStart, "dd MMM") + " - " + format(futureEnd, "dd MMM yyyy"),
             total, completed, pending, completionRate,
             totalBudget, totalRealization,
             analysisText, mitigationText,
-            evaluationItems, futureItems,
-            statusData
+            evaluationItems, futureItems, futureByDept,
+            statusData,
+            sortedDepts, sortedPeople
         };
 
     }, [isReportGenerated, plans, selectedDept, periodType, selectedYear, selectedMonth, selectedWeek, selectedQuarter, selectedSemester, dateRange]);
@@ -247,7 +287,7 @@ export default function ReportingPage() {
 
     const handleDownloadPDF = async () => {
         if (!reportRef.current) return;
-        const toastId = toast.loading("Menyiapkan PDF...");
+        const toastId = toast.loading("Menyiapkan PDF Komprehensif...");
 
         try {
             const element = reportRef.current;
@@ -257,10 +297,33 @@ export default function ReportingPage() {
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`Laporan_Kinerja_${periodType}_${selectedDept}.pdf`);
-            toast.success("PDF Berhasil diunduh!", { id: toastId });
+            // If height > A4 page, we might need multi-page? 
+            // For now, simplify to fit or simple multi-page logic
+            // But user wants "very comprehensive", implies long.
+            // basic jsPDF addImage squeezes, let's use auto-paging logic if possible or just one long image split
+
+            if (pdfHeight > 297) {
+                let heightLeft = pdfHeight;
+                let position = 0;
+                let pageHeight = 297;
+
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - pdfHeight; // top pos
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                    heightLeft -= pageHeight;
+                }
+            } else {
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            }
+
+            pdf.save(`Laporan_Detail_${periodType}_${selectedDept}.pdf`);
+            toast.success("PDF Detail Berhasil diunduh!", { id: toastId });
         } catch (e) {
+            console.error(e)
             toast.error("Gagal membuat PDF", { id: toastId });
         }
     };
@@ -326,8 +389,6 @@ export default function ReportingPage() {
                                 </SelectContent>
                             </Select>
                         </div>
-
-                        {/* Dynamics Inputs based on Period */}
 
                         {/* Year is almost always needed */}
                         <div className="space-y-2">
@@ -440,7 +501,7 @@ export default function ReportingPage() {
                             {/* Header */}
                             <div className="flex justify-between items-start border-b-2 border-slate-900 pb-8 mb-8">
                                 <div>
-                                    <h1 className="text-3xl font-bold text-slate-900 uppercase tracking-widest mb-2 font-serif">Laporan Kinerja {periodType}</h1>
+                                    <h1 className="text-3xl font-bold text-slate-900 uppercase tracking-widest mb-2 font-serif">Laporan Evaluasi Kinerja</h1>
                                     <div className="flex items-center gap-2 text-slate-500 font-medium">
                                         <Building2 className="w-4 h-4" />
                                         <span>{selectedDept === 'all' ? 'Seluruh Departemen' : selectedDept}</span>
@@ -448,136 +509,155 @@ export default function ReportingPage() {
                                 </div>
                                 <div className="text-right">
                                     <div className="bg-slate-900 text-white px-3 py-1 text-xs font-bold uppercase tracking-wider inline-block mb-2">
-                                        Official Report
+                                        Executive Summary
                                     </div>
                                     <div className="text-sm font-semibold text-slate-700">{generatedReport.periodLabel}</div>
                                 </div>
                             </div>
 
-                            {/* Executive Summary (AI Style) */}
-                            <section className="mb-10 bg-slate-50 p-6 rounded-r-xl border-l-4 border-indigo-600">
-                                <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                    <Target className="w-4 h-4" />
-                                    Deskripsi Evaluasi & Analisis
-                                </h2>
-                                <p className="text-slate-700 leading-relaxed text-justify text-sm font-sans">
-                                    {generatedReport.analysisText}
-                                </p>
-                            </section>
+                            {/* Section 1: Strategic Analysis */}
+                            <div className="grid grid-cols-3 gap-6 mb-10">
+                                <section className="col-span-2 bg-slate-50 p-6 rounded border-l-4 border-indigo-600">
+                                    <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                        <TrendingUp className="w-4 h-4" />
+                                        Evaluasi Kinerja Makro
+                                    </h2>
+                                    <p className="text-slate-700 leading-relaxed text-justify text-xs font-sans">
+                                        {generatedReport.analysisText}
+                                    </p>
+                                </section>
+                                <section className="bg-orange-50 p-6 rounded border-l-4 border-orange-500">
+                                    <h2 className="text-sm font-bold text-orange-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                        <AlertTriangle className="w-4 h-4" />
+                                        Resiko & Mitigasi
+                                    </h2>
+                                    <p className="text-slate-800 leading-relaxed text-justify text-xs italic">
+                                        "{generatedReport.mitigationText}"
+                                    </p>
+                                </section>
+                            </div>
 
-                            <section className="mb-10 bg-orange-50 p-6 rounded-r-xl border-l-4 border-orange-500">
-                                <h2 className="text-sm font-bold text-orange-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                    <AlertTriangle className="w-4 h-4" />
-                                    Mitigasi & Tindakan Korektif
-                                </h2>
-                                <p className="text-slate-800 leading-relaxed text-justify text-sm italic">
-                                    "{generatedReport.mitigationText}"
-                                </p>
-                            </section>
-
-                            {/* Complex Graphics Area */}
-                            <section className="mb-10 grid grid-cols-2 gap-8">
-                                <div>
-                                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-4 text-center">Distribusi Status</h3>
-                                    <div className="h-[200px] w-full">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={generatedReport.statusData}
-                                                    innerRadius={40}
-                                                    outerRadius={70}
-                                                    paddingAngle={5}
-                                                    dataKey="value"
-                                                >
-                                                    {generatedReport.statusData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                                    ))}
-                                                </Pie>
-                                                <ReTooltip />
-                                                <Legend verticalAlign="bottom" height={36} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-100">
-                                        <div>
-                                            <div className="text-xs text-emerald-600 font-bold uppercase">Penyelesaian</div>
-                                            <div className="text-2xl font-bold text-emerald-900">{generatedReport.completionRate}%</div>
-                                        </div>
-                                        <CheckCircle className="w-8 h-8 text-emerald-400 opacity-50" />
-                                    </div>
-                                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
-                                        <div>
-                                            <div className="text-xs text-blue-600 font-bold uppercase">Total Budget</div>
-                                            <div className="text-lg font-bold text-blue-900">
-                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(generatedReport.totalBudget)}
-                                            </div>
-                                        </div>
-                                        <Wallet className="w-8 h-8 text-blue-400 opacity-50" />
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* Timeline: Evaluasi */}
+                            {/* Section 2: Department Performance Matrix */}
                             <section className="mb-10">
-                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
-                                    Evaluasi Periode Ini (Belum Selesai)
+                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+                                    <Building2 className="w-4 h-4" />
+                                    Evaluasi Per Departemen
                                 </h3>
-                                {generatedReport.evaluationItems.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {generatedReport.evaluationItems.slice(0, 5).map((item, i) => (
-                                            <div key={i} className="flex items-start gap-4 p-3 bg-white border border-slate-100 shadow-sm rounded-lg">
-                                                <div className="w-2 h-2 mt-2 rounded-full bg-red-400 shrink-0" />
+                                <div className="overflow-hidden border rounded-lg">
+                                    <table className="min-w-full divide-y divide-slate-200">
+                                        <thead className="bg-slate-50">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Departemen</th>
+                                                <th className="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Skor Kinerja</th>
+                                                <th className="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Total Misi</th>
+                                                <th className="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Selesai</th>
+                                                <th className="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Pending</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-slate-200">
+                                            {generatedReport.sortedDepts.length > 0 ? generatedReport.sortedDepts.map((dept, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-xs font-medium text-slate-900">{dept.name}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-center">
+                                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${dept.score >= 80 ? 'bg-green-100 text-green-800' :
+                                                                dept.score >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                                                                    'bg-red-100 text-red-800'
+                                                            }`}>
+                                                            {dept.score}%
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-slate-500">{dept.total}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-emerald-600 font-bold">{dept.completed}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-xs text-center text-red-600 font-bold">{dept.pending}</td>
+                                                </tr>
+                                            )) : (
+                                                <tr><td colSpan={5} className="text-center py-4 text-xs">Tidak ada data departemen.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+
+                            {/* Section 3: Individual Performance Matrix */}
+                            <section className="mb-10 page-break-inside-avoid">
+                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+                                    <UserCircle className="w-4 h-4" />
+                                    Evaluasi Individu (Top PIC)
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {generatedReport.sortedPeople.slice(0, 10).map((person, i) => ( // Show top 10 to fit page
+                                        <div key={i} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded shadow-sm">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bolt text-slate-600">
+                                                    {person.name.substring(0, 2).toUpperCase()}
+                                                </div>
                                                 <div>
-                                                    <div className="text-sm font-bold text-slate-800">{item.lead}</div>
-                                                    <div className="text-xs text-slate-500 flex gap-2 mt-1">
-                                                        <span>{item.pic || "Unassigned"}</span> • <span>Due: {item.dueDate ? format(new Date(item.dueDate), 'dd MMM') : '-'}</span>
-                                                    </div>
+                                                    <div className="text-xs font-bold text-slate-800">{person.name}</div>
+                                                    <div className="text-[10px] text-slate-500">{person.dept}</div>
                                                 </div>
                                             </div>
-                                        ))}
-                                        {generatedReport.evaluationItems.length > 5 && (
-                                            <div className="text-xs text-center text-slate-400 italic">
-                                                ...dan {generatedReport.evaluationItems.length - 5} item lainnya
+                                            <div className="text-right">
+                                                <div className={`text-sm font-bold ${person.score === 100 ? 'text-emerald-600' : 'text-slate-700'}`}>
+                                                    {person.score}%
+                                                </div>
+                                                <div className="text-[10px] text-slate-400">{person.completed}/{person.total} Tugas</div>
                                             </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="text-sm text-slate-500 italic p-4 bg-slate-50 rounded text-center">Tidak ada evaluasi (Semua tugas selesai).</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                {generatedReport.sortedPeople.length > 10 && (
+                                    <div className="text-center text-xs text-slate-400 mt-2 italic">Menampilkan 10 dari {generatedReport.sortedPeople.length} personel</div>
                                 )}
                             </section>
 
-                            {/* Timeline: Rencana Berikutnya */}
+                            <div className="break-inside-avoid-page"></div>
+
+                            {/* Section 4: Future Planning by Dept */}
                             <section className="mb-8">
-                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">
-                                    Rencana {periodType === 'weekly' ? 'Minggu Depan' : 'Periode Berikutnya'}
+                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+                                    <Briefcase className="w-4 h-4" />
+                                    Rencana Kerja: {generatedReport.futurePeriodLabel}
                                 </h3>
-                                {generatedReport.futureItems.length > 0 ? (
-                                    <div className="flex flex-col gap-2">
-                                        {generatedReport.futureItems.slice(0, 5).map((item, i) => (
-                                            <div key={i} className="flex items-center gap-3 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100">
-                                                <ArrowRight className="w-4 h-4 text-indigo-400" />
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-semibold text-indigo-900">{item.lead}</div>
-                                                    <div className="text-xs text-indigo-600">Target: {format(new Date(item.dueDate!), 'dd MMMM yyyy', { locale: id })}</div>
-                                                </div>
+
+                                {Object.keys(generatedReport.futureByDept).length > 0 ? (
+                                    <div className="space-y-6">
+                                        {Object.entries(generatedReport.futureByDept).map(([deptName, items], idx) => (
+                                            <div key={idx} className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
+                                                <h4 className="text-xs font-bold text-indigo-800 uppercase mb-3 flex items-center gap-2">
+                                                    <Building2 className="w-3 h-3" />
+                                                    {deptName}
+                                                </h4>
+                                                <ul className="space-y-2">
+                                                    {items.map((item, i) => (
+                                                        <li key={i} className="flex items-start gap-2 text-xs border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                                                            <div className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">
+                                                                {format(new Date(item.dueDate!), 'dd MMM')}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <span className="font-medium text-slate-800">{item.lead}</span>
+                                                                <div className="text-[10px] text-slate-500 mt-0.5">PIC: <span className="text-indigo-600 font-medium">{item.pic || "-"}</span></div>
+                                                            </div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-sm text-slate-500 italic p-4 bg-slate-50 rounded text-center">Belum ada rencana terjadwal untuk periode berikutnya.</div>
+                                    <div className="text-sm text-slate-500 italic p-6 bg-slate-50 rounded text-center border border-dashed border-slate-200">
+                                        Belum ada rencana kerja terdaftar untuk periode mendatang.
+                                    </div>
                                 )}
                             </section>
 
                             {/* Footer */}
                             <div className="mt-auto flex justify-between items-end pt-8 border-t border-slate-200">
                                 <div className="text-xs text-slate-400">
-                                    Dicetak otomatis oleh Sistem  •  {format(new Date(), "dd/MM/yyyy HH:mm")}
+                                    System-Generated Detailed Report  •  {format(new Date(), "dd/MM/yyyy HH:mm")}
                                 </div>
                                 <div className="text-center w-40">
                                     <div className="h-16 border-b border-slate-300 mb-2"></div>
-                                    <div className="text-xs font-bold uppercase text-slate-700">Manager Area</div>
+                                    <div className="text-xs font-bold uppercase text-slate-700">Diketahui Oleh</div>
                                 </div>
                             </div>
                         </div>
