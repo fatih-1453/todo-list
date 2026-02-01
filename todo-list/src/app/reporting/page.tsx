@@ -168,7 +168,7 @@ export default function ReportingPage() {
                 if (p.divisi !== selectedDivisi) return false;
             }
 
-            const d = parseDate(p.dueDate);
+            const d = parseDate(p.endDate);
             if (!d) return false;
 
             return isWithinInterval(d, { start, end });
@@ -245,7 +245,7 @@ export default function ReportingPage() {
                 if (p.divisi !== selectedDivisi) return false;
             }
 
-            const d = parseDate(p.dueDate);
+            const d = parseDate(p.endDate);
             if (!d) return false;
 
             return d > end && d <= futureEnd; // STRICTLY AFTER current period end
@@ -643,7 +643,7 @@ export default function ReportingPage() {
                                                     {items.map((item, i) => (
                                                         <li key={i} className="flex items-start gap-2 text-xs border-b border-slate-100 pb-2 last:border-0 last:pb-0">
                                                             <div className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">
-                                                                {format(new Date(item.dueDate!), 'dd MMM')}
+                                                                {format(new Date(item.endDate!), 'dd MMM')}
                                                             </div>
                                                             <div className="flex-1">
                                                                 <span className="font-medium text-slate-800">{item.lead}</span>

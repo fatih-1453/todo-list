@@ -72,8 +72,8 @@ export function SmartReportModal({ plans, dateFrom, dateTo }: SmartReportModalPr
         endDate.setHours(23, 59, 59, 999);
 
         return plans.filter(p => {
-            if (!p.dueDate) return false;
-            const planDate = new Date(p.dueDate);
+            if (!p.endDate) return false;
+            const planDate = new Date(p.endDate);
             if (isNaN(planDate.getTime())) return false;
             return planDate >= startDate && planDate <= endDate;
         });

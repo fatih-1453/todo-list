@@ -158,8 +158,8 @@ export default function TimelinePage() {
                     // Start Date Priority: startDate > createdAt > now
                     let start = p.startDate ? new Date(p.startDate) : (p.createdAt ? new Date(p.createdAt) : new Date());
 
-                    // End Date Priority: dueDate > start + 1 day
-                    let end = p.dueDate ? new Date(p.dueDate) : new Date(start.getTime() + 86400000);
+                    // End Date Priority: endDate > start + 1 day
+                    let end = p.endDate ? new Date(p.endDate) : new Date(start.getTime() + 86400000);
 
                     // Ensure valid dates & range
                     if (isNaN(start.getTime())) start = new Date();
@@ -306,12 +306,12 @@ export default function TimelinePage() {
             id,
             data: {
                 startDate: task.start.toISOString(),
-                dueDate: task.end.toISOString(),
+                endDate: task.end.toISOString(),
             }
         })
     }
 
-    const handleDateEdit = (id: number, field: 'startDate' | 'dueDate', newDate: string) => {
+    const handleDateEdit = (id: number, field: 'startDate' | 'endDate', newDate: string) => {
         updatePlanMutation.mutate({
             id,
             data: {
@@ -604,7 +604,7 @@ export default function TimelinePage() {
                                                                             const id = parseInt(t.id);
                                                                             const val = e.target.value;
                                                                             if (!isNaN(id) && val) {
-                                                                                handleDateEdit(id, 'dueDate', val);
+                                                                                handleDateEdit(id, 'endDate', val);
                                                                             }
                                                                         }}
                                                                         onClick={(e) => e.stopPropagation()}

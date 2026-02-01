@@ -73,8 +73,8 @@ export default function DashboardPage() {
             }
 
             let matchesDate = true
-            if (dateRange?.from && dateRange?.to && p.dueDate) {
-                const planDate = new Date(p.dueDate)
+            if (dateRange?.from && dateRange?.to && p.endDate) {
+                const planDate = new Date(p.endDate)
                 if (!isNaN(planDate.getTime())) {
                     const start = new Date(dateRange.from)
                     start.setHours(0, 0, 0, 0)
@@ -139,8 +139,8 @@ export default function DashboardPage() {
             picData[picName].total++
             if (isDone) picData[picName].completed++
 
-            if (p.dueDate) {
-                const date = new Date(p.dueDate)
+            if (p.endDate) {
+                const date = new Date(p.endDate)
                 if (!isNaN(date.getTime())) {
                     const monthKey = date.toLocaleString('default', { month: 'short', year: '2-digit' })
                     trendData[monthKey] = (trendData[monthKey] || 0) + 1

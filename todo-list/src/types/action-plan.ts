@@ -25,7 +25,6 @@ export interface ActionPlan {
     // Dates
     startDate?: string
     endDate?: string
-    dueDate?: string
 
     // Metrics
     targetActivity?: number // Target Kegiatan
