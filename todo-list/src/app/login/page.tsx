@@ -93,8 +93,11 @@ export default function LoginPage() {
                                 transition={{ duration: 1.5, ease: 'easeOut' }}
                             />
 
-                            {/* Items Container */}
-                            <div className="flex flex-col w-full h-full min-h-0 justify-evenly items-center lg:items-stretch py-2">
+                            {/* Items Container - Scrollable on Mobile, Fixed/Even on Desktop */}
+                            <div className="flex flex-col w-full h-full min-h-0 items-center lg:items-stretch py-4 lg:py-2 
+                                overflow-y-auto lg:overflow-hidden 
+                                justify-start gap-4 lg:justify-evenly lg:gap-0
+                                scrollbar-hide lg:scrollbar-default">
                                 {roadmapItems.map((item, index) => {
                                     const isEven = index % 2 === 0;
                                     const isActive = activeItemId === item.id;
@@ -104,7 +107,7 @@ export default function LoginPage() {
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: index * 0.05, duration: 0.4 }}
-                                            className={`flex flex-col lg:flex-row items-center w-full ${isEven ? 'lg:flex-row-reverse' : ''} group relative px-4 lg:px-0`}
+                                            className={`flex flex-col lg:flex-row items-center w-full ${isEven ? 'lg:flex-row-reverse' : ''} group relative px-4 lg:px-0 flex-shrink-0`}
                                         >
                                             {/* Side Spacer (Mobile hidden, Desktop 50%) */}
                                             <div className="hidden lg:block w-1/2" />
