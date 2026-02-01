@@ -46,7 +46,23 @@ export const TargetModal: React.FC<TargetModalProps> = ({ isOpen, onClose, itemT
             };
 
             if (itemToEdit) {
-                await updateMutation.mutateAsync({ id: itemToEdit.id, data: payload });
+                // Sanitize payload for update - remove system fields
+                const { id, orgId, createdAt, updatedAt, ...editableFields } = data as any;
+
+                const updatePayload = {
+                    title: editableFields.title,
+                    type: editableFields.type,
+                    status: editableFields.status,
+                    targetAmount: Number(editableFields.targetAmount).toString(), // Ensure string for numeric type
+                    achievedAmount: Number(editableFields.achievedAmount).toString(),
+                    startDate: data.startDate ? new Date(data.startDate).toISOString() : null,
+                    endDate: data.endDate ? new Date(data.endDate).toISOString() : null,
+                };
+
+                await updateMutation.mutateAsync({
+                    id: itemToEdit.id,
+                    data: updatePayload
+                });
             } else {
                 await createMutation.mutateAsync(payload as any);
             }
