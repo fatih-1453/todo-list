@@ -8,7 +8,7 @@ import { ActionPlan } from "@/types/action-plan"
 import {
     Loader2, FileText, Search, Filter, Calendar, TrendingUp,
     AlertTriangle, CheckCircle, Target, Wallet, ArrowRight,
-    Building2, Printer, Download, UserCircle, Briefcase
+    Building2, Printer, Download, UserCircle, Briefcase, Trophy
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,12 +25,14 @@ import {
 } from "date-fns"
 import { id } from "date-fns/locale"
 import {
-    PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip, Legend
+    PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip, Legend,
+    BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from "recharts"
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import { motion } from "framer-motion"
 import { toast } from "sonner"
+import { useUsers } from "@/hooks/useUsers"
 
 // Types
 type PeriodType = 'weekly' | 'monthly' | 'quarterly' | 'semester' | 'yearly';
@@ -63,6 +65,8 @@ export default function ReportingPage() {
         queryFn: () => apiClient.get<ActionPlan[]>("/action-plans"),
         refetchInterval: 60000
     })
+
+    const { data: users } = useUsers()
 
     // Extract Unique Divisions from Plans
     const uniqueDivisions = useMemo(() => {
@@ -288,10 +292,32 @@ export default function ReportingPage() {
             analysisText, mitigationText,
             evaluationItems, futureItems, futureByDivisi,
             statusData,
-            sortedDivisions, sortedPeople
+            sortedDivisions, sortedPeople,
+            chartData: {
+                financial: filtered.reduce((acc: any[], p) => {
+                    const idx = acc.findIndex(k => k.name === (p.divisi || "General"));
+                    const t = Number(p.targetNominal) || 0;
+                    const r = Number(p.realNominal) || 0;
+                    if (idx > -1) {
+                        acc[idx].Target += t;
+                        acc[idx].Realization += r;
+                    } else {
+                        acc.push({ name: p.divisi || "General", Target: t, Realization: r });
+                    }
+                    return acc;
+                }, [])
+            }
         };
 
     }, [isReportGenerated, plans, selectedDivisi, periodType, selectedYear, selectedMonth, selectedWeek, selectedQuarter, selectedSemester, dateRange]);
+
+    // Helper for Avatar
+    const getUserImage = (name: string) => {
+        if (!users) return null;
+        const normalizedName = name.toLowerCase();
+        const user = users.find(u => u.name.toLowerCase() === normalizedName);
+        return user?.image;
+    };
 
 
     const handleGenerate = () => {
@@ -567,6 +593,48 @@ export default function ReportingPage() {
                                 </section>
                             </div>
 
+                            {/* Section: Visual Analytics (Charts) */}
+                            <section className="mb-10 grid grid-cols-2 gap-6 page-break-inside-avoid">
+                                <div className="border border-slate-200 rounded-lg p-4">
+                                    <h3 className="text-xs font-bold text-slate-700 uppercase mb-4 text-center">Distribusi Status</h3>
+                                    <div className="h-[200px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={generatedReport.statusData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={40}
+                                                    outerRadius={70}
+                                                    paddingAngle={5}
+                                                    dataKey="value"
+                                                >
+                                                    {generatedReport.statusData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                                <div className="border border-slate-200 rounded-lg p-4">
+                                    <h3 className="text-xs font-bold text-slate-700 uppercase mb-4 text-center">Performansi Finansial</h3>
+                                    <div className="h-[200px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={generatedReport.chartData.financial}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis dataKey="name" tick={{ fontSize: 8 }} interval={0} />
+                                                <YAxis tick={{ fontSize: 8 }} tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(0)}M` : val} />
+                                                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                                                <Bar dataKey="Target" fill="#93c5fd" radius={[4, 4, 0, 0]} name="Target" />
+                                                <Bar dataKey="Realization" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Realisasi" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </section>
+
                             {/* Section 2: Division Performance Matrix */}
                             <section className="mb-10">
                                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
@@ -615,25 +683,41 @@ export default function ReportingPage() {
                                     Evaluasi Individu (Top PIC)
                                 </h3>
                                 <div className="grid grid-cols-2 gap-4">
-                                    {generatedReport.sortedPeople.slice(0, 10).map((person, i) => ( // Show top 10 to fit page
-                                        <div key={i} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded shadow-sm">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bolt text-slate-600">
-                                                    {person.name.substring(0, 2).toUpperCase()}
+                                    {generatedReport.sortedPeople.slice(0, 10).map((person, i) => {
+                                        const imageUrl = getUserImage(person.name);
+                                        const isTopPerformer = person.score > 85;
+
+                                        return (
+                                            <div key={i} className={`flex items-center justify-between p-3 border rounded shadow-sm ${isTopPerformer ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-100'}`}>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="relative">
+                                                        {imageUrl ? (
+                                                            <img src={imageUrl} alt={person.name} className="w-8 h-8 rounded-full object-cover border border-slate-200" />
+                                                        ) : (
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isTopPerformer ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+                                                                {person.name.substring(0, 2).toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                        {isTopPerformer && (
+                                                            <div className="absolute -top-1 -right-1 bg-yellow-400 text-white rounded-full p-0.5 border border-white">
+                                                                <Trophy className="w-3 h-3" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-bold text-slate-800 truncate max-w-[120px]">{person.name}</div>
+                                                        <div className="text-[10px] text-slate-500 truncate max-w-[120px]">{person.divisi}</div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-800">{person.name}</div>
-                                                    <div className="text-[10px] text-slate-500">{person.divisi}</div>
+                                                <div className="text-right">
+                                                    <div className={`text-sm font-bold ${person.score >= 85 ? 'text-emerald-600' : person.score >= 50 ? 'text-indigo-600' : 'text-slate-700'}`}>
+                                                        {person.score}%
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400">{person.completed}/{person.total} Tugas</div>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <div className={`text-sm font-bold ${person.score === 100 ? 'text-emerald-600' : 'text-slate-700'}`}>
-                                                    {person.score}%
-                                                </div>
-                                                <div className="text-[10px] text-slate-400">{person.completed}/{person.total} Tugas</div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                                 {generatedReport.sortedPeople.length > 10 && (
                                     <div className="text-center text-xs text-slate-400 mt-2 italic">Menampilkan 10 dari {generatedReport.sortedPeople.length} personel</div>
@@ -651,27 +735,52 @@ export default function ReportingPage() {
 
                                 {Object.keys(generatedReport.futureByDivisi).length > 0 ? (
                                     <div className="space-y-6">
-                                        {Object.entries(generatedReport.futureByDivisi).map(([divName, items], idx) => (
-                                            <div key={idx} className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
-                                                <h4 className="text-xs font-bold text-indigo-800 uppercase mb-3 flex items-center gap-2">
-                                                    <Building2 className="w-3 h-3" />
-                                                    {divName}
-                                                </h4>
-                                                <ul className="space-y-2">
-                                                    {items.map((item, i) => (
-                                                        <li key={i} className="flex items-start gap-2 text-xs border-b border-slate-100 pb-2 last:border-0 last:pb-0">
-                                                            <div className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">
-                                                                {format(new Date(item.endDate!), 'dd MMM')}
+                                        {Object.entries(generatedReport.futureByDivisi).map(([divName, items], idx) => {
+                                            // Group items by Week
+                                            const weeklyGroups: Record<string, ActionPlan[]> = {};
+                                            items.forEach(item => {
+                                                const d = item.endDate ? new Date(item.endDate) : null;
+                                                const weekKey = d ? `Minggu ${getWeek(d, { weekStartsOn: 1 }) - getWeek(new Date(d.getFullYear(), d.getMonth(), 1), { weekStartsOn: 1 }) + 1}` : "TBD";
+                                                if (!weeklyGroups[weekKey]) weeklyGroups[weekKey] = [];
+                                                weeklyGroups[weekKey].push(item);
+                                            });
+
+                                            return (
+                                                <div key={idx} className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
+                                                    <h4 className="text-xs font-bold text-indigo-800 uppercase mb-3 flex items-center gap-2">
+                                                        <Building2 className="w-3 h-3" />
+                                                        {divName}
+                                                    </h4>
+
+                                                    <div className="space-y-4">
+                                                        {Object.entries(weeklyGroups).sort().map(([week, weeklyItems], wIdx) => (
+                                                            <div key={wIdx} className="relative pl-4 border-l-2 border-slate-200">
+                                                                <div className="absolute -left-[5px] top-0 w-2.5 h-2.5 rounded-full bg-slate-300 border-2 border-white"></div>
+                                                                <h5 className="text-[10px] font-bold text-slate-500 uppercase mb-2">{week}</h5>
+                                                                <ul className="space-y-2">
+                                                                    {weeklyItems.map((item, i) => (
+                                                                        <li key={i} className="bg-white p-2 rounded shadow-sm border border-slate-100">
+                                                                            <div className="flex justify-between items-start">
+                                                                                <span className="font-medium text-xs text-slate-800 line-clamp-2">{item.lead}</span>
+                                                                                <span className="bg-slate-100 text-[9px] px-1.5 py-0.5 rounded text-slate-500 whitespace-nowrap">
+                                                                                    {item.endDate ? format(new Date(item.endDate), 'dd MMM') : '-'}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1.5 mt-1">
+                                                                                <div className="w-4 h-4 bg-indigo-100 rounded-full flex items-center justify-center text-[8px] font-bold text-indigo-600">
+                                                                                    {(item.pic || "U").substring(0, 1)}
+                                                                                </div>
+                                                                                <span className="text-[10px] text-slate-500">{item.pic || "Unassigned"}</span>
+                                                                            </div>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
                                                             </div>
-                                                            <div className="flex-1">
-                                                                <span className="font-medium text-slate-800">{item.lead}</span>
-                                                                <div className="text-[10px] text-slate-500 mt-0.5">PIC: <span className="text-indigo-600 font-medium">{item.pic || "-"}</span></div>
-                                                            </div>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        ))}
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 ) : (
                                     <div className="text-sm text-slate-500 italic p-6 bg-slate-50 rounded text-center border border-dashed border-slate-200">
