@@ -30,7 +30,7 @@ import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip as ReTooltip, Legend,
     BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from "recharts"
-import html2canvas from 'html2canvas'
+// import html2canvas from 'html2canvas' // Removed in favor of html-to-image
 import jsPDF from 'jspdf'
 import { motion } from "framer-motion"
 import { toast } from "sonner"
@@ -405,27 +405,31 @@ export default function ReportingPage() {
         const toastId = toast.loading("Sedang membuat PDF... Mohon tunggu");
 
         try {
+            // Import dynamically to avoid SSR issues if any, or just standard import usage
+            const { toPng } = await import('html-to-image');
+
             // Create a clone to render full width/height without scrollbars
             const element = reportRef.current;
             const clone = element.cloneNode(true) as HTMLElement;
 
-            // Style the clone to be fully expanded
-            clone.style.width = '1200px'; // Fixed width to ensure desktop layout
-            clone.style.height = 'auto';
+            // Style the clone to be fully expanded and fixed width
+            clone.style.width = '1200px';
+            clone.style.height = 'auto'; // Let height expand
             clone.style.overflow = 'visible';
             clone.style.position = 'absolute';
             clone.style.top = '-9999px';
-            clone.style.left = '0'; // Align left
+            clone.style.left = '0';
+            clone.style.backgroundColor = '#ffffff'; // Ensure white bg
 
             // Specific fix for Gantt Scroll
             const ganttScrollContainer = clone.querySelectorAll('.overflow-x-auto');
             ganttScrollContainer.forEach((el: any) => {
                 el.style.overflow = 'visible';
-                el.style.width = 'auto'; // allow expansion
+                el.style.width = 'auto';
             });
 
-            // FIX: Recharts width(-1) error
-            // Explicitly set dimensions for all Recharts containers in the clone
+            // FIX: Recharts width logic
+            // Explicitly set dimensions for all Recharts containers 
             const charts = clone.querySelectorAll('.recharts-responsive-container');
             charts.forEach((chart: any) => {
                 chart.style.width = '1000px';
@@ -433,58 +437,52 @@ export default function ReportingPage() {
                 chart.style.position = 'relative';
             });
 
-            // FIX: "lab" color error using forced legacy colors where possible
-            clone.style.colorScheme = 'light';
-
-            // Specific Fix for Left Panel shadow overlapping or layout issues
-            // Maybe ensure left panel and right panel stack or flex correctly in print
-            // For now, let's keep the flex row but ensure the container is wide enough
-
             document.body.appendChild(clone);
 
-            // Wait a moment to ensure fonts/images are rendered
+            // Short delay for fonts/charts
             await new Promise(resolve => setTimeout(resolve, 800));
 
-            const canvas = await html2canvas(clone, {
-                scale: 1.5, // Slightly lower scale for performance if chart is huge
-                useCORS: true,
-                logging: false,
+            const dataUrl = await toPng(clone, {
+                cacheBust: true,
                 backgroundColor: '#ffffff',
-                windowWidth: 1200, // Match clone width
+                width: 1200, // Match clone width
+                style: {
+                    fontFamily: 'Inter, sans-serif' // Ensure font is picked up
+                }
             });
 
-            document.body.removeChild(clone); // Clean up
+            document.body.removeChild(clone);
 
-            const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
-
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
 
-            const imgWidth = pdfWidth;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            const imgProps = pdf.getImageProperties(dataUrl);
+            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
             let heightLeft = imgHeight;
             let position = 0;
 
             // First page
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
             heightLeft -= pdfHeight;
 
             // Subsequent pages
             while (heightLeft > 0) {
-                position = heightLeft - imgHeight; // Align to top of next page
+                position = heightLeft - imgHeight;
                 pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
                 heightLeft -= pdfHeight;
             }
 
-            pdf.save(`Laporan_Kinerja_${selectedDivisi}_${format(new Date(), 'yyyyMMdd')}.pdf`);
-            toast.success("PDF berhasil diunduh!", { id: toastId });
+            pdf.save(`Laporan_Kerja_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+            toast.dismiss(toastId);
+            toast.success("PDF berhasil diunduh!");
 
         } catch (error) {
-            console.error("PDF-GEN ERROR:", error);
-            toast.error("Gagal membuat PDF. Coba refresh halaman.", { id: toastId });
+            console.error("PDF download error:", error);
+            toast.dismiss(toastId);
+            toast.error("Gagal membuat PDF. Silakan coba lagi.");
         }
     };
 
