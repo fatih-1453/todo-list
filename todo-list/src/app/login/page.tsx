@@ -31,8 +31,10 @@ export default function LoginPage() {
     useEffect(() => {
         const fetchRoadmap = async () => {
             try {
+                // Fetch and Sort by displayOrder or ID to ensure correct flow
                 const data = await apiClient.get<RoadmapItem[]>('/roadmap')
-                setRoadmapItems(data)
+                const sortedData = data.sort((a, b) => a.displayOrder - b.displayOrder)
+                setRoadmapItems(sortedData)
             } catch (err) {
                 console.error("Failed to fetch roadmap", err)
             } finally {
@@ -61,185 +63,187 @@ export default function LoginPage() {
         })
     }
 
+    // Static positions for the 6 visible slots in the curve
+    // Adjusted to match the "C" shape or "U" turn shape in the reference
+    // Path flows from Top-Left (Start) to Bottom-Left (End)
+    const positions = [
+        { id: 1, x: 20, y: 15, color: '#A0F1E8', labelPos: 'left' },   // Q1'25 (Top Left)
+        { id: 2, x: 50, y: 15, color: '#6EE7D8', labelPos: 'top' },    // Q2'25
+        { id: 3, x: 80, y: 30, color: '#4FD1C5', labelPos: 'right' },  // Q3'25 (Curve Start)
+        { id: 4, x: 80, y: 60, color: '#63B3ED', labelPos: 'right' },  // Q4'25 (Curve Middle)
+        { id: 5, x: 50, y: 75, color: '#7F9CF5', labelPos: 'bottom' }, // Q1'26
+        { id: 6, x: 20, y: 85, color: '#9F7AEA', labelPos: 'left' }    // Q2'26 (Bottom Left Arrow)
+    ]
+
     return (
-        <div className="min-h-screen flex font-sans">
-            {/* Left Side - Dynamic Roadmap */}
-            <div className="hidden lg:flex w-[55%] bg-gray-50 relative overflow-hidden flex-col justify-center p-12">
-                <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5"></div>
-
-                <div className="relative z-10 max-w-xl mx-auto w-full h-full flex flex-col">
-                    <div className="mb-8">
-                        <h2 className="text-4xl font-extrabold mb-3 tracking-tight text-gray-900">
-                            Product <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Roadmap</span>
-                        </h2>
-                        <p className="text-gray-500 text-lg">Following our journey to excellence.</p>
-                    </div>
-
-                    {loadingRoadmap ? (
-                        <div className="flex-1 flex items-center justify-center">
-                            <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
-                        </div>
-                    ) : (
-                        <div className="relative flex-1 overflow-y-auto pr-4 scrollbar-hide py-4">
-                            {/* Continuous Connecting Line */}
-                            <div className="absolute left-8 top-4 bottom-4 w-1 bg-gray-200 rounded-full" />
-                            <div className="absolute left-8 top-4 w-1 bg-gradient-to-b from-blue-500 via-purple-500 to-transparent rounded-full"
-                                style={{ height: `${(roadmapItems.filter(i => i.status === 'completed').length / roadmapItems.length) * 100}%` }}
-                            />
-
-                            <div className="space-y-12">
-                                {roadmapItems.map((item, index) => {
-                                    const isCompleted = item.status === 'completed';
-                                    const isInProgress = item.status === 'in-progress';
-
-                                    return (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.15, type: "spring" }}
-                                            key={item.id}
-                                            className={`relative pl-24 group ${isInProgress ? 'scale-105' : ''}`}
-                                        >
-                                            {/* Node Marker */}
-                                            <div className={`absolute left-0 top-0 w-16 h-16 flex items-center justify-center z-20`}>
-                                                <div className={`
-                                                    relative flex items-center justify-center w-12 h-12 rounded-full border-4 shadow-lg transition-all duration-500
-                                                    ${isCompleted ? 'bg-green-500 border-green-100' :
-                                                        isInProgress ? 'bg-blue-600 border-blue-100' :
-                                                            'bg-white border-gray-100'}
-                                                `}>
-                                                    {isInProgress && (
-                                                        <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-20"></span>
-                                                    )}
-
-                                                    {isCompleted ? (
-                                                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    ) : isInProgress ? (
-                                                        <MapPin className="w-6 h-6 text-white animate-bounce" />
-                                                    ) : (
-                                                        <div className="w-3 h-3 rounded-full bg-gray-300" />
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Connector Line to Card */}
-                                            <div className={`absolute left-16 top-8 w-8 h-0.5 ${isInProgress ? 'bg-blue-500' : 'bg-gray-200'}`} />
-
-                                            {/* Card Content */}
-                                            <div
-                                                className={`
-                                                    relative p-6 rounded-2xl border transition-all duration-300
-                                                    ${isInProgress
-                                                        ? 'bg-white shadow-xl shadow-blue-500/10 border-blue-100 ring-1 ring-blue-50'
-                                                        : 'bg-white/60 hover:bg-white shadow-sm hover:shadow-md border-gray-100 backdrop-blur-sm'
-                                                    }
-                                                `}
-                                            >
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div>
-                                                        <span className={`
-                                                            inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide
-                                                            ${isInProgress ? 'bg-blue-100 text-blue-700' :
-                                                                isCompleted ? 'bg-green-100 text-green-700' :
-                                                                    'bg-gray-100 text-gray-500'}
-                                                        `}>
-                                                            {item.quarter}
-                                                        </span>
-                                                        <h3 className={`text-lg font-bold mt-1 ${isInProgress ? 'text-gray-900' : 'text-gray-700'}`}>
-                                                            {item.title}
-                                                        </h3>
-                                                    </div>
-                                                    {isInProgress && (
-                                                        <span className="flex h-3 w-3 relative">
-                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                <p className="text-gray-500 text-sm leading-relaxed mb-4">
-                                                    {item.description}
-                                                </p>
-
-                                                {/* Smart Progress Visual */}
-                                                <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                                                    <motion.div
-                                                        initial={{ width: 0 }}
-                                                        animate={{ width: isCompleted ? '100%' : isInProgress ? '60%' : '0%' }}
-                                                        transition={{ duration: 1.5, ease: "easeOut" }}
-                                                        className={`h-full rounded-full ${isCompleted ? 'bg-gradient-to-r from-green-400 to-green-500' :
-                                                                isInProgress ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-gray-300'
-                                                            }`}
-                                                    />
-                                                </div>
-                                                <div className="flex justify-between mt-2 text-[10px] font-medium text-gray-400 uppercase tracking-wider">
-                                                    <span>Progress</span>
-                                                    <span>{isCompleted ? '100%' : isInProgress ? 'In Progress' : '0%'}</span>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
+        <div className="min-h-screen flex flex-col lg:flex-row font-sans bg-gray-50">
+            {/* Left Side - Curved Roadmap Visualization */}
+            <div className="w-full lg:w-[60%] relative overflow-hidden flex flex-col items-center justify-center p-8 lg:p-12 bg-gray-50">
+                {/* Background Text */}
+                <div className="absolute top-8 left-8 z-0">
+                    <h1 className="text-4xl font-bold text-gray-800 tracking-tight">ROADMAP <span className="font-light">TEMPLATE</span></h1>
+                    <p className="text-gray-400 text-sm mt-1 uppercase tracking-widest">Lorem ipsum dolor sit amet</p>
                 </div>
+
+                {/* Logo Top Right */}
+                <div className="absolute top-8 right-8 z-0 flex items-center gap-2 opacity-50 grayscale">
+                    <span className="font-bold text-gray-600">MY PRODUCT</span> <span className="font-light">ROADMAP</span>
+                </div>
+
+                {loadingRoadmap ? (
+                    <Loader2 className="w-10 h-10 animate-spin text-gray-300" />
+                ) : (
+                    <div className="relative w-full max-w-2xl aspect-[4/3] mt-20">
+                        {/* The Curved Path SVG Layer */}
+                        <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl" preserveAspectRatio="xMidYMid meet">
+                            <defs>
+                                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="1" dy="2" stdDeviation="2" floodOpacity="0.3" />
+                                </filter>
+                            </defs>
+
+                            {/* Segment 1: Top Left Line */}
+                            <path d="M 10 20 L 35 18 L 35 25 L 10 27 Z" fill="#D0F8F3" filter="url(#shadow)" />
+
+                            {/* Segment 2: Top Line */}
+                            <path d="M 38 18 L 63 20 L 60 28 L 38 25 Z" fill="#8BEDE2" filter="url(#shadow)" />
+
+                            {/* Segment 3: Curve Top Right */}
+                            <path d="M 66 21 C 85 25, 90 35, 85 50 L 75 50 C 78 40, 75 32, 63 29 Z" fill="#58D8CD" filter="url(#shadow)" />
+
+                            {/* Segment 4: Curve Bottom Right */}
+                            <path d="M 85 53 C 80 70, 70 80, 50 85 L 48 75 C 60 72, 68 65, 75 53 Z" fill="#6CB2EB" filter="url(#shadow)" />
+
+                            {/* Segment 5: Bottom Line */}
+                            <path d="M 47 86 L 25 83 L 28 73 L 45 75 Z" fill="#7E9BF3" filter="url(#shadow)" />
+
+                            {/* Segment 6: Arrow Head (Purple) */}
+                            <path d="M 22 83 L 5 90 L 22 97 L 22 83 Z" fill="#8B5CF6" filter="url(#shadow)" /> {/* Corrected Arrow Shape */}
+                            {/* Fix Arrow to be a proper block ending in point */}
+                            <path d="M 22 83 L 5 90 L 22 97 L 25 83 Z" fill="#805AD5" className="hidden" />
+                            <path d="M 22 83 L 0 90 L 22 97 L 25 83 Z" fill="#805AD5" filter="url(#shadow)" />
+
+                            {/* Quarter Labels on the Path (approximate) */}
+                            <text x="20" y="32" fontSize="2.5" fill="white" fontWeight="bold" opacity="0.8">Q1'25</text>
+                            <text x="50" y="32" fontSize="2.5" fill="white" fontWeight="bold" opacity="0.8">Q2'25</text>
+                            <text x="68" y="45" fontSize="2.5" fill="white" fontWeight="bold" opacity="0.8">Q3'25</text>
+                            <text x="68" y="65" fontSize="2.5" fill="white" fontWeight="bold" opacity="0.8">Q4'25</text>
+                            <text x="40" y="70" fontSize="2.5" fill="white" fontWeight="bold" opacity="0.8">Q1'26</text>
+                            <text x="25" y="78" fontSize="2.5" fill="white" fontWeight="bold" opacity="0.8">Q2'26</text>
+                            <text x="10" y="88" fontSize="2.5" fill="white" fontWeight="bold" opacity="0.8">Q3'26</text>
+                        </svg>
+
+                        {/* Interactive Markers Layer */}
+                        {/* Mapping items to the static positions. If items > 6, we stop or need more slots. 
+                            If items < 6, some slots are empty. */}
+                        {roadmapItems.slice(0, 6).map((item, index) => {
+                            const pos = positions[index];
+                            if (!pos) return null;
+
+                            return (
+                                <motion.div
+                                    key={item.id}
+                                    initial={{ opacity: 0, scale: 0 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.5 + (index * 0.1) }}
+                                    className="absolute"
+                                    style={{
+                                        left: `${pos.x}%`,
+                                        top: `${pos.y}%`,
+                                        transform: 'translate(-50%, -100%)' // Pivot at bottom center (tip of pin)
+                                    }}
+                                >
+                                    {/* Pin */}
+                                    <div className="relative group cursor-pointer">
+                                        <MapPin
+                                            size={48}
+                                            fill={item.color || pos.color}
+                                            color="white"
+                                            strokeWidth={1.5}
+                                            className="drop-shadow-lg transform transition-transform group-hover:-translate-y-2"
+                                        />
+                                        <div className="w-3 h-1 bg-black/20 rounded-full blur-[2px] absolute bottom-1 left-1/2 -translate-x-1/2 group-hover:scale-75 group-hover:opacity-50 transition-all" />
+
+                                        {/* Text Card - Positioned relative to pin to match image layout */}
+                                        <div className={`
+                                            absolute w-48 pointer-events-none group-hover:pointer-events-auto
+                                            ${pos.labelPos === 'left' ? 'right-full mr-2 text-right top-0' : ''}
+                                            ${pos.labelPos === 'right' ? 'left-full ml-2 text-left top-0' : ''}
+                                            ${pos.labelPos === 'top' ? 'bottom-full mb-2 text-center left-1/2 -translate-x-1/2' : ''}
+                                            ${pos.labelPos === 'bottom' ? 'top-full mt-2 text-center left-1/2 -translate-x-1/2' : ''}
+                                        `}>
+                                            <div className="flex items-center gap-1 mb-1 justify-inherit">
+                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color || pos.color }} />
+                                                <span className="font-bold text-sm uppercase" style={{ color: item.color || pos.color }}>{item.title}</span>
+                                            </div>
+                                            <p className="text-[10px] text-gray-500 font-medium leading-tigher line-clamp-4">
+                                                {item.description}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )
+                        })}
+                    </div>
+                )}
             </div>
 
-            {/* Right Side - Login Form */}
-            <div className="w-full lg:w-[45%] bg-white flex items-center justify-center p-8 relative">
-                <div className="w-full max-w-md space-y-8">
+            {/* Right Side - Login Form (Stuck to right, white bg) */}
+            <div className="w-full lg:w-[40%] bg-white flex flex-col justify-center p-8 lg:p-16 shadow-2xl z-20">
+                <div className="max-w-sm mx-auto w-full">
                     {/* Header */}
-                    <div className="text-center">
-                        <div className="w-16 h-16 bg-black rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-black/10">
-                            <span className="text-white font-bold text-3xl">Z</span>
+                    <div className="mb-10 text-left">
+                        <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center mb-6 shadow-xl shadow-black/20">
+                            <span className="text-white font-bold text-2xl">Z</span>
                         </div>
-                        <h1 className="text-2xl font-bold mb-2">Welcome Back!</h1>
-                        <p className="text-gray-500 text-sm">Sign in to continue to your dashboard</p>
+                        <h1 className="text-3xl font-bold mb-2 text-gray-900">Welcome Back</h1>
+                        <p className="text-gray-500">Please enter your details to sign in.</p>
                     </div>
 
                     {/* Form */}
-                    <form onSubmit={handleLogin} className="space-y-6">
+                    <form onSubmit={handleLogin} className="space-y-5">
                         {error && (
-                            <div className="p-3 bg-red-50 text-red-600 text-xs rounded-xl flex items-center justify-center">
+                            <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg flex items-center font-medium">
                                 {error}
                             </div>
                         )}
 
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-gray-700 ml-1">Email</label>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-900 uppercase tracking-wide">Email Address</label>
                             <div className="relative">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-yellow)] transition-all"
-                                    placeholder="you@example.com"
+                                    className="w-full bg-gray-50 border-b-2 border-gray-100 px-10 py-3 text-sm focus:outline-none focus:border-black focus:bg-white transition-all placeholder:text-gray-400"
+                                    placeholder="Enter your email"
                                     required
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-gray-700 ml-1">Password</label>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-900 uppercase tracking-wide">Password</label>
                             <div className="relative">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent-yellow)] transition-all"
+                                    className="w-full bg-gray-50 border-b-2 border-gray-100 px-10 py-3 text-sm focus:outline-none focus:border-black focus:bg-white transition-all placeholder:text-gray-400"
                                     placeholder="••••••••"
                                     required
                                 />
                             </div>
                         </div>
 
-                        <div className="flex justify-end">
-                            <Link href="#" className="text-xs text-gray-500 hover:text-black hover:underline">
+                        <div className="flex justify-between items-center pt-2">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black" />
+                                <span className="text-xs text-gray-500">Remember me</span>
+                            </label>
+                            <Link href="#" className="text-xs font-semibold text-black hover:underline">
                                 Forgot Password?
                             </Link>
                         </div>
@@ -247,45 +251,40 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-black text-white py-3.5 rounded-xl font-medium hover:bg-gray-800 transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/20 hover:shadow-xl active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+                            className="w-full bg-black text-white h-12 rounded-lg font-bold text-sm tracking-wide hover:bg-gray-900 transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/20 hover:shadow-xl active:scale-95 disabled:opacity-70 mt-4"
                         >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign In"}
-                            {!loading && <ArrowRight className="w-4 h-4" />}
-                        </button>
-
-                        <div className="relative my-6">
-                            <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t border-gray-100" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                            </div>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={async () => {
-                                await authClient.signIn.social({
-                                    provider: "github",
-                                    callbackURL: "/"
-                                })
-                            }}
-                            className="w-full bg-white text-gray-900 border border-gray-200 py-3.5 rounded-xl font-medium hover:bg-gray-50 transition-all flex items-center justify-center gap-2 active:scale-95"
-                        >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
-                            </svg>
-                            GitHub
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign in to Dashboard"}
                         </button>
                     </form>
 
-                    {/* Footer */}
-                    <div className="text-center text-xs text-gray-500">
-                        Don&apos;t have an account?{" "}
-                        <Link href="/register" className="text-black font-semibold hover:underline">
-                            Register here
-                        </Link>
+                    <div className="relative my-8">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-gray-100" />
+                        </div>
+                        <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
+                            <span className="bg-white px-2 text-gray-400">Or continue with</span>
+                        </div>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            await authClient.signIn.social({
+                                provider: "github",
+                                callbackURL: "/"
+                            })
+                        }}
+                        className="w-full bg-white text-gray-900 border-2 border-gray-100 h-12 rounded-lg font-bold text-sm hover:bg-gray-50 transition-all flex items-center justify-center gap-2 active:scale-95"
+                    >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                        </svg>
+                        Sign in with GitHub
+                    </button>
+
+                    <p className="text-center text-xs text-gray-400 mt-8">
+                        Don't have an account? <Link href="/register" className="text-black font-bold hover:underline">Register now</Link>
+                    </p>
                 </div>
             </div>
         </div>
