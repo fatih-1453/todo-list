@@ -413,42 +413,52 @@ export default function ReportingPage() {
             const clone = element.cloneNode(true) as HTMLElement;
 
             // Style the clone to be fully expanded and fixed width
+            // Placing it deep off-screen vertically can cause issues in some rendering engines.
+            // Using a container to "mask" it might be better, or just placing it at top:0 left:-9999px
             clone.style.width = '1200px';
-            clone.style.height = 'auto'; // Let height expand
+            clone.style.height = 'auto';
             clone.style.overflow = 'visible';
-            clone.style.position = 'absolute';
-            clone.style.top = '-9999px';
-            clone.style.left = '0';
-            clone.style.backgroundColor = '#ffffff'; // Ensure white bg
+            clone.style.position = 'fixed'; // Fixed ensures it's relative to viewport but we move it out
+            clone.style.top = '0';
+            clone.style.left = '-10000px'; // Move out of view horizontally
+            clone.style.backgroundColor = '#ffffff';
+            clone.style.zIndex = '-1000'; // Behind everything
 
             // Specific fix for Gantt Scroll
             const ganttScrollContainer = clone.querySelectorAll('.overflow-x-auto');
             ganttScrollContainer.forEach((el: any) => {
                 el.style.overflow = 'visible';
-                el.style.width = 'auto';
+                el.style.width = '100%';
+                el.style.display = 'block'; // Force block
             });
 
             // FIX: Recharts width logic
-            // Explicitly set dimensions for all Recharts containers 
             const charts = clone.querySelectorAll('.recharts-responsive-container');
             charts.forEach((chart: any) => {
                 chart.style.width = '1000px';
                 chart.style.height = '300px';
                 chart.style.position = 'relative';
+                // Force visibility
+                chart.style.display = 'block';
+                chart.style.visibility = 'visible';
             });
 
             document.body.appendChild(clone);
 
             // Short delay for fonts/charts
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // Increase slightly to be safe
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
             const dataUrl = await toPng(clone, {
                 cacheBust: true,
                 backgroundColor: '#ffffff',
-                width: 1200, // Match clone width
+                width: 1200,
+                // Ensure proper styling context
                 style: {
-                    fontFamily: 'Inter, sans-serif' // Ensure font is picked up
-                }
+                    fontFamily: 'Inter, sans-serif',
+                    transform: 'none', // reset any potential transforms
+                },
+                pixelRatio: 2 // Improve quality
             });
 
             document.body.removeChild(clone);
