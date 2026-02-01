@@ -5,8 +5,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
 import { apiClient } from "@/lib/api-client"
-import { Loader2, Mail, Lock, CheckCircle2, Circle, Sparkles } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { Loader2, Mail, Lock, CheckCircle2, Circle, Sparkles, ChevronDown } from "lucide-react"
+import { motion } from "framer-motion"
 
 type RoadmapItem = {
     id: number
@@ -27,7 +27,6 @@ export default function LoginPage() {
 
     const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([])
     const [loadingRoadmap, setLoadingRoadmap] = useState(true)
-    const [hoveredItemId, setHoveredItemId] = useState<number | null>(null)
 
     useEffect(() => {
         const fetchRoadmap = async () => {
@@ -58,7 +57,7 @@ export default function LoginPage() {
         <div className="h-screen w-screen flex flex-col lg:flex-row font-sans bg-white overflow-hidden">
 
             {/* Left Side - The "Perfect" Visual (Fit to Screen) */}
-            <div className="w-full lg:w-[65%] xl:w-[70%] bg-slate-50 relative flex flex-col items-center p-6 lg:p-8 h-full overflow-hidden">
+            <div className="w-full lg:w-[65%] xl:w-[70%] bg-slate-50 relative flex flex-col items-center p-4 lg:p-6 h-full overflow-hidden">
 
                 {/* Brand Ambient Background */}
                 <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
@@ -68,12 +67,12 @@ export default function LoginPage() {
 
                 <div className="relative z-10 w-full max-w-5xl h-full flex flex-col">
                     {/* Header - Compact */}
-                    <div className="text-center flex-shrink-0 mb-4 lg:mb-6">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm border border-gray-100 mb-2">
+                    <div className="text-center flex-shrink-0 mb-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-0.5 bg-white rounded-full shadow-sm border border-gray-100 mb-2">
                             <Sparkles className="w-3 h-3 text-orange-500" />
                             <span className="text-[10px] font-semibold tracking-wide text-gray-600 uppercase">Strategic Roadmap</span>
                         </div>
-                        <h1 className="text-2xl lg:text-3xl font-extrabold text-gray-900 tracking-tight">Building the <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-green-600">Future</span></h1>
+                        <h1 className="text-xl lg:text-2xl font-extrabold text-gray-900 tracking-tight">Building the <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-green-600">Future</span></h1>
                     </div>
 
                     {loadingRoadmap ? (
@@ -81,30 +80,28 @@ export default function LoginPage() {
                             <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
                         </div>
                     ) : (
-                        <div className="flex-1 relative flex flex-col justify-center">
+                        // Container that allows scrolling IF needed, but tries to fit. Scrollbar hidden.
+                        <div className="flex-1 relative flex flex-col justify-center overflow-y-auto scrollbar-hide">
                             {/* Central Line */}
                             <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-gray-200 -translate-x-1/2 rounded-full hidden lg:block" />
                             <motion.div
                                 className="absolute left-1/2 top-4 w-[2px] bg-gradient-to-b from-orange-500 via-green-500 to-blue-500 -translate-x-1/2 rounded-full hidden lg:block"
                                 initial={{ height: 0 }}
-                                animate={{ height: '90%' }}
+                                animate={{ height: '100%' }}
                                 transition={{ duration: 1.5, ease: 'easeOut' }}
                             />
 
-                            {/* Items Container - Flex column with space distribution */}
-                            <div className="flex flex-col flex-1 justify-evenly h-full w-full">
+                            {/* Items Auto-Distributed */}
+                            <div className="flex flex-col w-full h-full min-h-min justify-center gap-2 lg:gap-0 lg:justify-evenly py-2">
                                 {roadmapItems.map((item, index) => {
                                     const isEven = index % 2 === 0;
-                                    const isHovered = hoveredItemId === item.id;
-
                                     return (
                                         <motion.div
                                             key={item.id}
-                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ delay: index * 0.1, duration: 0.4 }}
-                                            className={`flex flex-col lg:flex-row items-center w-full ${isEven ? 'lg:flex-row-reverse' : ''}`}
-                                            style={{ minHeight: '60px' }} // Ensure some base height for spacing
+                                            transition={{ delay: index * 0.05, duration: 0.4 }}
+                                            className={`flex flex-col lg:flex-row items-center w-full ${isEven ? 'lg:flex-row-reverse' : ''} group shrink-0`}
                                         >
                                             {/* Side Spacer */}
                                             <div className="w-full lg:w-1/2" />
@@ -112,100 +109,46 @@ export default function LoginPage() {
                                             {/* Center Node */}
                                             <div className="relative z-10 flex-shrink-0 mx-4">
                                                 <div className={`
-                                                    w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center shadow-[0_0_0_4px_white] border-2 transition-all duration-500
+                                                    w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center shadow-[0_0_0_3px_white] border-2 transition-all duration-300
                                                     ${item.status === 'completed' ? 'bg-white border-green-500 text-green-600' :
                                                         item.status === 'in-progress' ? 'bg-orange-500 border-orange-500 text-white scale-110 shadow-orange-200' :
                                                             'bg-white border-gray-300 text-gray-300'}
                                                 `}>
-                                                    {item.status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> :
-                                                        item.status === 'in-progress' ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                                                            <Circle className="w-3 h-3" />}
+                                                    {item.status === 'completed' ? <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4" /> :
+                                                        item.status === 'in-progress' ? <Loader2 className="w-3 h-3 lg:w-4 lg:h-4 animate-spin" /> :
+                                                            <Circle className="w-2.5 h-2.5" />}
                                                 </div>
                                             </div>
 
-                                            {/* Card Container - Relative for layout, absolute items inside */}
-                                            <div
-                                                className={`w-full lg:w-1/2 flex relative ${isEven ? 'lg:justify-end pr-0 lg:pr-6' : 'lg:justify-start pl-0 lg:pl-6'}`}
-                                                onMouseEnter={() => setHoveredItemId(item.id)}
-                                                onMouseLeave={() => setHoveredItemId(null)}
-                                            >
-                                                {/* Placeholder (Always renders to hold space) */}
+                                            {/* Card Content - Super Compact */}
+                                            <div className={`w-full lg:w-1/2 flex ${isEven ? 'lg:justify-end pr-0 lg:pr-6' : 'lg:justify-start pl-0 lg:pl-6'}`}>
                                                 <div className={`
-                                                    relative p-3 lg:p-4 bg-white rounded-xl shadow-sm border border-gray-100 w-full max-w-sm
-                                                    ${isHovered ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200
+                                                    relative p-3 bg-white rounded-xl shadow-sm border border-gray-100 w-full max-w-sm hover:shadow-md transition-all
+                                                    ${item.status === 'in-progress' ? 'ring-1 ring-orange-500/20 bg-orange-50/5' : ''}
                                                 `}>
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${item.status === 'completed' ? 'bg-green-50 text-green-700' : item.status === 'in-progress' ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                    {/* Arrow Pointer */}
+                                                    <div className={`
+                                                        absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white border-t border-r border-gray-100 rotate-45 hidden lg:block
+                                                        ${isEven ? '-right-[5px] border-l-0 border-b-0' : '-left-[5px] border-t-0 border-r-0 border-b border-l'}
+                                                    `}></div>
+
+                                                    <div className="flex justify-between items-center mb-0.5">
+                                                        <span className={`
+                                                            px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider
+                                                            ${item.status === 'completed' ? 'bg-green-50 text-green-700' :
+                                                                item.status === 'in-progress' ? 'bg-orange-50 text-orange-700' :
+                                                                    'bg-gray-100 text-gray-500'}
+                                                        `}>
                                                             {item.quarter}
                                                         </span>
                                                     </div>
-                                                    <h3 className="text-sm lg:text-base font-bold text-gray-900 leading-tight truncate">{item.title}</h3>
-                                                    <div className="text-xs text-gray-600 leading-relaxed mt-2 space-y-1.5">
-                                                        {item.description.split('\n').map((line, i) => (
-                                                            <div key={i} className="flex gap-1.5 items-start">
-                                                                {line.includes(':') ? (
-                                                                    <>
-                                                                        <span className="text-orange-500 mt-[3px] text-[8px]">▸</span>
-                                                                        <span className="flex-1">
-                                                                            <strong className="text-gray-900 font-bold">{line.split(':')[0]}:</strong>
-                                                                            {line.split(':').slice(1).join(':')}
-                                                                        </span>
-                                                                    </>
-                                                                ) : (
-                                                                    <p className="text-gray-500">{line}</p>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                    <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-orange-600 transition-colors truncate">
+                                                        {item.title}
+                                                    </h3>
+                                                    <p className="text-[10px] lg:text-[11px] text-gray-500 leading-snug mt-0.5 line-clamp-2">
+                                                        {item.description}
+                                                    </p>
                                                 </div>
-
-                                                {/* Expanded Hover Card (Absolute overlay) */}
-                                                <AnimatePresence>
-                                                    {isHovered && (
-                                                        <motion.div
-                                                            layoutId={`card-${item.id}`}
-                                                            className={`
-                                                                absolute top-0 z-50 p-5 bg-white rounded-xl shadow-xl border border-orange-100 w-full min-w-[320px] max-w-lg
-                                                                ${isEven ? 'right-0 lg:right-6 origin-right' : 'left-0 lg:left-6 origin-left'}
-                                                            `}
-                                                            initial={{ opacity: 0, scale: 0.95 }}
-                                                            animate={{ opacity: 1, scale: 1, width: '150%', maxWidth: '500px' }}
-                                                            exit={{ opacity: 0, scale: 0.95 }}
-                                                            transition={{ duration: 0.2 }}
-                                                        >
-                                                            <div className="flex justify-between items-center mb-3">
-                                                                <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${item.status === 'completed' ? 'bg-green-50 text-green-700' : item.status === 'in-progress' ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                                    {item.quarter}
-                                                                </span>
-                                                                {/* Status Badge */}
-                                                                <span className="text-[10px] text-gray-400 font-medium capitalize flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-full">
-                                                                    {item.status === 'completed' ? <CheckCircle2 className="w-3 h-3 text-green-500" /> : <Circle className="w-3 h-3 text-orange-500" />}
-                                                                    {item.status.replace('-', ' ')}
-                                                                </span>
-                                                            </div>
-                                                            <h3 className="text-lg font-bold text-gray-900 leading-tight mb-3 text-orange-600 border-b border-gray-100 pb-2">
-                                                                {item.title}
-                                                            </h3>
-                                                            <div className="text-sm text-gray-600 leading-relaxed space-y-2">
-                                                                {item.description.split('\n').map((line, i) => (
-                                                                    <div key={i} className="flex gap-2 items-start">
-                                                                        {line.includes(':') ? (
-                                                                            <>
-                                                                                <span className="text-orange-500 mt-[5px] text-[10px]">▸</span>
-                                                                                <span className="flex-1">
-                                                                                    <strong className="text-gray-900 font-bold block mb-0.5">{line.split(':')[0]}:</strong>
-                                                                                    <span className="block text-gray-600">{line.split(':').slice(1).join(':').trim()}</span>
-                                                                                </span>
-                                                                            </>
-                                                                        ) : (
-                                                                            <p>{line}</p>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
                                             </div>
                                         </motion.div>
                                     )
@@ -221,7 +164,7 @@ export default function LoginPage() {
                 <div className="max-w-xs mx-auto w-full">
                     {/* Compact Logo Area */}
                     <div className="mb-6 text-center">
-                        <div className="w-full h-16 relative mb-2 flex justify-center">
+                        <div className="w-full h-14 relative mb-2 flex justify-center">
                             <img src="/logo-full.png" alt="DOMYADHU Logo" className="h-full object-contain" />
                         </div>
                         <h1 className="text-xl font-bold text-gray-900">Sign In</h1>
