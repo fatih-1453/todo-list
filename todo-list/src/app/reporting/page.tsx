@@ -411,40 +411,75 @@ export default function ReportingPage() {
             // Store original styles to restore later
             const originalOverflow = element.style.overflow;
             const originalWidth = element.style.width;
+            const originalMaxWidth = element.style.maxWidth;
+            const originalPadding = element.style.padding;
 
-            // Temporarily expand scrollable areas for capture
+            // Set fixed width for consistent PDF layout (A4 aspect ratio friendly)
+            element.style.width = '800px';
+            element.style.maxWidth = '800px';
             element.style.overflow = 'visible';
+            element.style.padding = '24px';
 
-            // Expand all overflow-x-auto containers
+            // Expand all overflow-x-auto containers and fix Gantt chart width
             const scrollContainers = element.querySelectorAll('.overflow-x-auto');
-            const originalContainerStyles: { el: HTMLElement; overflow: string; width: string }[] = [];
+            const originalContainerStyles: { el: HTMLElement; styles: CSSStyleDeclaration['cssText'] }[] = [];
             scrollContainers.forEach((el: any) => {
                 originalContainerStyles.push({
                     el,
-                    overflow: el.style.overflow,
-                    width: el.style.width
+                    styles: el.style.cssText
                 });
                 el.style.overflow = 'visible';
-                el.style.width = 'auto';
+                el.style.width = '100%';
+                el.style.maxWidth = '100%';
+            });
+
+            // Fix chart containers to have proper dimensions
+            const chartContainers = element.querySelectorAll('.recharts-responsive-container');
+            const originalChartStyles: { el: HTMLElement; styles: string }[] = [];
+            chartContainers.forEach((el: any) => {
+                originalChartStyles.push({ el, styles: el.style.cssText });
+                el.style.width = '100%';
+                el.style.height = '200px';
+                el.style.minHeight = '200px';
+            });
+
+            // Fix grid layouts to stack properly
+            const gridContainers = element.querySelectorAll('.grid');
+            const originalGridStyles: { el: HTMLElement; styles: string }[] = [];
+            gridContainers.forEach((el: any) => {
+                originalGridStyles.push({ el, styles: el.style.cssText });
+                // Force single column for narrow PDF
+                if (el.classList.contains('grid-cols-2') || el.classList.contains('md:grid-cols-2')) {
+                    el.style.display = 'flex';
+                    el.style.flexDirection = 'column';
+                    el.style.gap = '16px';
+                }
             });
 
             // Wait for any reflows
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 800));
 
             // Use toCanvas for better compatibility
             const canvas = await htmlToImage.toCanvas(element, {
                 cacheBust: true,
                 backgroundColor: '#ffffff',
                 pixelRatio: 2,
-                skipFonts: true, // Skip font embedding which can cause issues
+                skipFonts: true,
             });
 
             // Restore original styles
             element.style.overflow = originalOverflow;
             element.style.width = originalWidth;
-            originalContainerStyles.forEach(({ el, overflow, width }) => {
-                el.style.overflow = overflow;
-                el.style.width = width;
+            element.style.maxWidth = originalMaxWidth;
+            element.style.padding = originalPadding;
+            originalContainerStyles.forEach(({ el, styles }) => {
+                el.style.cssText = styles;
+            });
+            originalChartStyles.forEach(({ el, styles }) => {
+                el.style.cssText = styles;
+            });
+            originalGridStyles.forEach(({ el, styles }) => {
+                el.style.cssText = styles;
             });
 
             const imgData = canvas.toDataURL('image/png');
