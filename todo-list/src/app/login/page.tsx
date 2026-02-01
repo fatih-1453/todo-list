@@ -140,16 +140,21 @@ export default function LoginPage() {
                                                         </span>
                                                     </div>
                                                     <h3 className="text-sm lg:text-base font-bold text-gray-900 leading-tight truncate">{item.title}</h3>
-                                                    <div className="text-xs text-gray-500 leading-tight mt-1 line-clamp-2">
+                                                    <div className="text-xs text-gray-600 leading-relaxed mt-2 space-y-1.5">
                                                         {item.description.split('\n').map((line, i) => (
-                                                            <p key={i}>
+                                                            <div key={i} className="flex gap-1.5 items-start">
                                                                 {line.includes(':') ? (
                                                                     <>
-                                                                        <strong className="text-gray-700">{line.split(':')[0]}:</strong>
-                                                                        {line.split(':').slice(1).join(':')}
+                                                                        <span className="text-orange-500 mt-[3px] text-[8px]">▸</span>
+                                                                        <span className="flex-1">
+                                                                            <strong className="text-gray-900 font-bold">{line.split(':')[0]}:</strong>
+                                                                            {line.split(':').slice(1).join(':')}
+                                                                        </span>
                                                                     </>
-                                                                ) : line}
-                                                            </p>
+                                                                ) : (
+                                                                    <p className="text-gray-500">{line}</p>
+                                                                )}
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 </div>
@@ -164,32 +169,38 @@ export default function LoginPage() {
                                                                 ${isEven ? 'right-0 lg:right-6 origin-right' : 'left-0 lg:left-6 origin-left'}
                                                             `}
                                                             initial={{ opacity: 0, scale: 0.95 }}
-                                                            animate={{ opacity: 1, scale: 1, width: '140%', maxWidth: '500px' }}
+                                                            animate={{ opacity: 1, scale: 1, width: '150%', maxWidth: '500px' }}
                                                             exit={{ opacity: 0, scale: 0.95 }}
                                                             transition={{ duration: 0.2 }}
                                                         >
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${item.status === 'completed' ? 'bg-green-50 text-green-700' : item.status === 'in-progress' ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                            <div className="flex justify-between items-center mb-3">
+                                                                <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${item.status === 'completed' ? 'bg-green-50 text-green-700' : item.status === 'in-progress' ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>
                                                                     {item.quarter}
                                                                 </span>
                                                                 {/* Status Badge */}
-                                                                <span className="text-[10px] text-gray-400 font-medium capitalize flex items-center gap-1">
+                                                                <span className="text-[10px] text-gray-400 font-medium capitalize flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-full">
+                                                                    {item.status === 'completed' ? <CheckCircle2 className="w-3 h-3 text-green-500" /> : <Circle className="w-3 h-3 text-orange-500" />}
                                                                     {item.status.replace('-', ' ')}
                                                                 </span>
                                                             </div>
-                                                            <h3 className="text-base lg:text-lg font-bold text-gray-900 leading-tight mb-2 text-orange-600">
+                                                            <h3 className="text-lg font-bold text-gray-900 leading-tight mb-3 text-orange-600 border-b border-gray-100 pb-2">
                                                                 {item.title}
                                                             </h3>
-                                                            <div className="text-sm text-gray-600 leading-relaxed">
+                                                            <div className="text-sm text-gray-600 leading-relaxed space-y-2">
                                                                 {item.description.split('\n').map((line, i) => (
-                                                                    <p key={i} className="mb-1">
+                                                                    <div key={i} className="flex gap-2 items-start">
                                                                         {line.includes(':') ? (
                                                                             <>
-                                                                                <strong className="text-gray-900">{line.split(':')[0]}:</strong>
-                                                                                {line.split(':').slice(1).join(':')}
+                                                                                <span className="text-orange-500 mt-[5px] text-[10px]">▸</span>
+                                                                                <span className="flex-1">
+                                                                                    <strong className="text-gray-900 font-bold block mb-0.5">{line.split(':')[0]}:</strong>
+                                                                                    <span className="block text-gray-600">{line.split(':').slice(1).join(':').trim()}</span>
+                                                                                </span>
                                                                             </>
-                                                                        ) : line}
-                                                                    </p>
+                                                                        ) : (
+                                                                            <p>{line}</p>
+                                                                        )}
+                                                                    </div>
                                                                 ))}
                                                             </div>
                                                         </motion.div>
