@@ -5,8 +5,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
 import { apiClient } from "@/lib/api-client"
-import { Loader2, Mail, Lock, MapPin } from "lucide-react"
-import { motion } from "framer-motion"
+import { Loader2, Mail, Lock, Calendar, CheckCircle2, Circle, ArrowRight } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
 type RoadmapItem = {
     id: number
@@ -27,6 +27,7 @@ export default function LoginPage() {
 
     const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([])
     const [loadingRoadmap, setLoadingRoadmap] = useState(true)
+    const [hoveredItem, setHoveredItem] = useState<number | null>(null)
 
     useEffect(() => {
         const fetchRoadmap = async () => {
@@ -53,151 +54,116 @@ export default function LoginPage() {
         })
     }
 
-    // Precise coordinates matching visual segments
-    const positions = [
-        { id: 1, x: 18, y: 35, labelPos: 'left' },   // Segment 1 (Teal Light)
-        { id: 2, x: 42, y: 32, labelPos: 'top' },    // Segment 2 (Teal Medium)
-        { id: 3, x: 62, y: 45, labelPos: 'right' },  // Segment 3 (Grey Curve)
-        { id: 4, x: 62, y: 68, labelPos: 'right' },  // Segment 4 (Blue Curve)
-        { id: 5, x: 45, y: 82, labelPos: 'bottom' }, // Segment 5 (Purple Straight)
-        { id: 6, x: 20, y: 85, labelPos: 'left' }    // Segment 6 (Arrow)
-    ]
-
     return (
         <div className="min-h-screen flex flex-col lg:flex-row font-sans bg-gray-50 overflow-hidden">
-            {/* Left Side - Visuals */}
-            <div className="w-full lg:w-[60%] relative flex flex-col items-center justify-center p-4 lg:p-12 bg-[#F0F2F5]">
-                <div className="absolute top-10 left-10 z-10">
-                    <h1 className="text-4xl font-light text-gray-800 tracking-tight">
-                        <span className="font-bold">ROADMAP</span> TEMPLATE
-                    </h1>
-                    <p className="text-gray-400 text-xs mt-1 tracking-widest uppercase">Lorem ipsum dolor sit amet</p>
+            {/* Left Side - Modern Smart Visuals */}
+            <div className="w-full lg:w-[60%] relative flex flex-col justify-center p-8 lg:p-16 bg-[#F8FAFC] overflow-hidden">
+
+                {/* Abstract Background Shapes */}
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+                    <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-orange-100 blur-[100px] opacity-60 animate-pulse" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-green-100 blur-[100px] opacity-60 animate-pulse delay-1000" />
                 </div>
 
-                <div className="absolute top-10 right-10 flex items-center gap-2 opacity-60 z-10">
-                    <span className="font-bold text-gray-700">MY PRODUCT</span> <span className="font-light text-gray-500">ROADMAP</span>
+                <div className="relative z-10 mb-8">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                    >
+                        <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight">
+                            Our Journey to <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-green-600">
+                                Impact & Innovation
+                            </span>
+                        </h1>
+                        <p className="text-gray-500 mt-4 text-lg max-w-xl">
+                            Track our progress as we build the future of philanthropy together.
+                        </p>
+                    </motion.div>
                 </div>
 
-                {loadingRoadmap ? (
-                    <Loader2 className="w-10 h-10 animate-spin text-gray-300" />
-                ) : (
-                    <div className="relative w-full max-w-5xl aspect-[16/9] mt-10 scale-95 lg:scale-105">
-                        {/* 3D Segmented SVG Roadmap */}
-                        <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-                            <defs>
-                                <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                                    <feGaussianBlur in="SourceAlpha" stdDeviation="1" />
-                                    <feOffset dx="0" dy="2" result="offsetblur" />
-                                    <feComponentTransfer>
-                                        <feFuncA type="linear" slope="0.3" />
-                                    </feComponentTransfer>
-                                    <feMerge>
-                                        <feMergeNode />
-                                        <feMergeNode in="SourceGraphic" />
-                                    </feMerge>
-                                </filter>
-                            </defs>
+                {/* Smart Timeline */}
+                <div className="relative z-10 flex-1 min-h-[400px] pr-4">
+                    {loadingRoadmap ? (
+                        <div className="flex items-center gap-3 text-gray-400">
+                            <Loader2 className="w-5 h-5 animate-spin" /> Loading Roadmap...
+                        </div>
+                    ) : (
+                        <div className="relative h-full flex flex-col space-y-0">
+                            {/* Connecting Line */}
+                            <div className="absolute left-[27px] top-6 bottom-6 w-[2px] bg-gray-200 ml-[1px]"></div>
 
-                            {/* Segment 1: Start (Teal Light) */}
-                            {/* 3D Side */}
-                            <path d="M 5 40 L 30 38 L 30 40 L 5 42 Z" fill="#A0E0D8" />
-                            {/* Top Face */}
-                            <path d="M 5 35 L 30 33 L 30 38 L 5 40 Z" fill="#CFFBF6" filter="url(#drop-shadow)" />
+                            {/* Gradient Fill Line (Animated) */}
+                            <motion.div
+                                className="absolute left-[27px] top-6 w-[2px] bg-gradient-to-b from-orange-500 via-green-500 to-blue-500 ml-[1px]"
+                                initial={{ height: 0 }}
+                                animate={{ height: '90%' }}
+                                transition={{ duration: 2, ease: "easeInOut" }}
+                            />
 
-                            {/* Segment 2: Middle Top (Teal Medium) */}
-                            {/* 3D Side */}
-                            <path d="M 32 38 L 55 40 L 55 42 L 32 40 Z" fill="#6BDDD0" />
-                            {/* Top Face */}
-                            <path d="M 32 33 L 55 35 L 55 40 L 32 38 Z" fill="#8BEDE2" filter="url(#drop-shadow)" />
-
-                            {/* Segment 3: Curve Down (Grey) */}
-                            {/* 3D Side */}
-                            <path d="M 57 40 C 75 42, 78 52, 72 62 L 68 62 C 74 52, 71 44, 57 42 Z" fill="#888" />
-                            {/* Top Face */}
-                            <path d="M 57 35 C 75 37, 78 47, 72 57 L 62 57 C 68 47, 65 39, 57 35 Z" fill="#A0AEC0" filter="url(#drop-shadow)" />
-
-                            {/* Segment 4: Curve Back (Blue) */}
-                            {/* 3D Side */}
-                            <path d="M 70 65 C 68 75, 60 82, 45 85 L 43 85 C 58 82, 65 75, 66 65 Z" fill="#4A90E2" />
-                            {/* Top Face */}
-                            <path d="M 71 60 C 69 70, 61 77, 46 80 L 41 80 C 60 77, 68 67, 70 60 Z" fill="#6CB2EB" filter="url(#drop-shadow)" />
-
-                            {/* Segment 5: Bottom Straight (Purple) */}
-                            {/* 3D Side */}
-                            <path d="M 43 87 L 22 84 L 22 86 L 43 89 Z" fill="#6B46C1" />
-                            {/* Top Face */}
-                            <path d="M 43 82 L 22 79 L 22 84 L 43 87 Z" fill="#805AD5" filter="url(#drop-shadow)" />
-
-                            {/* Segment 6: Arrow Head (Dark Purple) */}
-                            {/* 3D Side */}
-                            <path d="M 20 86 L -5 82 L 18 78 L 20 86 Z" fill="#553C9A" />
-                            {/* Top Face */}
-                            <path d="M 20 81 L -5 77 L 18 73 L 20 81 Z" fill="#8B5CF6" filter="url(#drop-shadow)" />
-
-
-                            {/* Labels ON the ribbon */}
-                            <text x="15" y="39" fontSize="1.5" fill="#555" fontWeight="bold">Q1'25</text>
-                            <text x="42" y="39" fontSize="1.5" fill="#555" fontWeight="bold">Q2'25</text>
-                            <text x="60" y="45" fontSize="1.5" fill="white" fontWeight="bold">Q3'25</text>
-                            <text x="58" y="70" fontSize="1.5" fill="white" fontWeight="bold">Q4'25</text>
-                            <text x="32" y="85" fontSize="1.5" fill="white" fontWeight="bold">Q1'26</text>
-                            <text x="10" y="81" fontSize="1.5" fill="white" fontWeight="bold">Q2'26</text>
-                        </svg>
-
-                        {/* Pins & Cards */}
-                        {roadmapItems.slice(0, 6).map((item, index) => {
-                            const pos = positions[index];
-                            if (!pos) return null;
-
-                            return (
-                                <motion.div
-                                    key={item.id}
-                                    initial={{ opacity: 0, y: -20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: index * 0.15 }}
-                                    className="absolute"
-                                    style={{
-                                        left: `${pos.x}%`,
-                                        top: `${pos.y}%`,
-                                        transform: 'translate(-50%, -100%)'
-                                    }}
-                                >
-                                    <div className="relative group flex flex-col items-center">
-                                        {/* Pin */}
-                                        <div className="relative z-20 transition-transform duration-300 group-hover:scale-110">
-                                            <div style={{ color: item.color || '#4FD1C5' }}>
-                                                <svg width="40" height="50" viewBox="0 0 40 50" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
-                                                    <path d="M20 0C8.954 0 0 8.954 0 20C0 35 20 50 20 50C20 50 40 35 40 20C40 8.954 31.046 0 20 0Z" fill="currentColor" />
-                                                    <circle cx="20" cy="20" r="8" fill="white" />
-                                                </svg>
-                                            </div>
+                            {/* Timeline Items */}
+                            <div className="space-y-6 overflow-y-auto pr-2 scrollbar-hide py-2 max-h-[60vh]">
+                                {roadmapItems.map((item, index) => (
+                                    <motion.div
+                                        key={item.id}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: index * 0.15, duration: 0.5 }}
+                                        className="relative pl-20 group"
+                                        onMouseEnter={() => setHoveredItem(item.id)}
+                                        onMouseLeave={() => setHoveredItem(null)}
+                                    >
+                                        {/* Timeline Node */}
+                                        <div className={`
+                                            absolute left-2 top-0 w-12 h-12 rounded-2xl flex items-center justify-center
+                                            bg-white border-2 z-10 transition-all duration-300 shadow-sm
+                                            ${item.status === 'completed' ? 'border-green-500 text-green-600' :
+                                                item.status === 'in-progress' ? 'border-orange-500 text-orange-600 scale-110 shadow-orange-200 ring-4 ring-orange-50' :
+                                                    'border-gray-200 text-gray-400 grayscale'}
+                                        `}>
+                                            {item.status === 'completed' ? (
+                                                <CheckCircle2 className="w-6 h-6" />
+                                            ) : item.status === 'in-progress' ? (
+                                                <Loader2 className="w-6 h-6 animate-spin" />
+                                            ) : (
+                                                <Circle className="w-5 h-5" />
+                                            )}
                                         </div>
-                                        {/* Pin Shadow */}
-                                        <div className="w-8 h-2 bg-black/20 rounded-full blur-sm -mt-1 z-10" />
+
+                                        {/* Connector to Card */}
+                                        <div className="absolute left-14 top-6 w-6 h-[2px] bg-gray-200 group-hover:bg-gray-300 transition-colors" />
 
                                         {/* Content Card */}
                                         <div className={`
-                                            absolute w-48 pointer-events-none group-hover:pointer-events-auto z-30
-                                            ${pos.labelPos === 'left' ? 'right-[110%] top-0 text-right pr-4' : ''}
-                                            ${pos.labelPos === 'right' ? 'left-[110%] top-0 text-left pl-4' : ''}
-                                            ${pos.labelPos === 'top' ? 'bottom-[110%] left-1/2 -translate-x-1/2 text-center pb-2' : ''}
-                                            ${pos.labelPos === 'bottom' ? 'top-[110%] left-1/2 -translate-x-1/2 text-center pt-2' : ''}
+                                            p-5 rounded-2xl bg-white/80 backdrop-blur-md border border-gray-100 shadow-sm
+                                            transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:bg-white
+                                            ${item.status === 'in-progress' ? 'border-l-4 border-l-orange-500' : ''}
+                                            ${item.status === 'completed' ? 'border-l-4 border-l-green-500' : ''}
                                         `}>
-                                            <div className={`flex items-center gap-2 mb-1 ${pos.labelPos === 'left' ? 'justify-end' : pos.labelPos === 'right' ? 'justify-start' : 'justify-center'}`}>
-                                                {pos.labelPos === 'left' && <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />}
-                                                <h3 className="font-bold text-sm uppercase tracking-tight text-gray-800" style={{ color: item.color }}>{item.title}</h3>
-                                                {pos.labelPos !== 'left' && <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />}
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <span className={`
+                                                        px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider mb-2 inline-block
+                                                        ${item.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                                            item.status === 'in-progress' ? 'bg-orange-100 text-orange-700' :
+                                                                'bg-gray-100 text-gray-500'}
+                                                    `}>
+                                                        {item.quarter}
+                                                    </span>
+                                                    <h3 className="text-lg font-bold text-gray-900 leading-tight">{item.title}</h3>
+                                                </div>
                                             </div>
-                                            <p className="text-xs text-gray-500 font-medium leading-relaxed">
+                                            <p className="text-sm text-gray-500 leading-relaxed font-medium">
                                                 {item.description}
                                             </p>
                                         </div>
-                                    </div>
-                                </motion.div>
-                            )
-                        })}
-                    </div>
-                )}
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Right Side - Login Form */}
@@ -213,53 +179,63 @@ export default function LoginPage() {
 
                     <form onSubmit={handleLogin} className="space-y-4">
                         {error && (
-                            <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg">{error}</div>
+                            <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-600" />
+                                {error}
+                            </div>
                         )}
-                        <div>
-                            <label className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-1 block">Email</label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full border-b-2 border-gray-200 bg-transparent py-2 text-sm focus:border-black focus:outline-none transition-colors"
-                                placeholder="Enter your email"
-                                required
-                            />
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Email</label>
+                            <div className="relative group">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 text-sm focus:border-black focus:ring-1 focus:ring-black focus:outline-none transition-all"
+                                    placeholder="Enter your email"
+                                    required
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-1 block">Password</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full border-b-2 border-gray-200 bg-transparent py-2 text-sm focus:border-black focus:outline-none transition-colors"
-                                placeholder="••••••••"
-                                required
-                            />
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Password</label>
+                            <div className="relative group">
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-black transition-colors" />
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2.5 pl-10 text-sm focus:border-black focus:ring-1 focus:ring-black focus:outline-none transition-all"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
                         </div>
 
-                        <div className="flex justify-between items-center pt-2">
+                        <div className="flex justify-between items-center pt-1">
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" className="w-3 h-3 rounded text-black focus:ring-black border-gray-300" />
-                                <span className="text-xs text-gray-500">Remember me</span>
+                                <input type="checkbox" className="w-4 h-4 rounded text-black focus:ring-black border-gray-300" />
+                                <span className="text-xs text-gray-600 font-medium">Remember me</span>
                             </label>
-                            <Link href="#" className="text-xs font-medium text-gray-500 hover:text-black">
-                                Forgot?
+                            <Link href="#" className="text-xs font-bold text-gray-500 hover:text-black">
+                                Forgot Password?
                             </Link>
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-black text-white h-11 rounded-lg font-bold text-sm tracking-wide hover:bg-gray-800 transition-all shadow-lg shadow-black/10 mt-6"
+                            className="w-full bg-black text-white h-11 rounded-lg font-bold text-sm tracking-wide hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2 mt-2"
                         >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Sign In"}
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign In"}
+                            {!loading && <ArrowRight className="w-4 h-4" />}
                         </button>
                     </form>
 
                     <div className="relative my-8">
                         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
-                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-400 font-medium">Or</span></div>
+                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-3 text-gray-400 font-medium">Or continue with</span></div>
                     </div>
 
                     <button
@@ -270,10 +246,10 @@ export default function LoginPage() {
                                 callbackURL: "/"
                             })
                         }}
-                        className="w-full border border-gray-200 h-11 rounded-lg font-medium text-sm hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                        className="w-full border border-gray-200 h-11 rounded-lg font-bold text-gray-700 text-sm hover:bg-gray-50 transition-all flex items-center justify-center gap-2 active:scale-95"
                     >
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" /></svg>
-                        GitHub
+                        GitHub Mode
                     </button>
 
                     <p className="text-center text-xs text-gray-400 mt-6">
