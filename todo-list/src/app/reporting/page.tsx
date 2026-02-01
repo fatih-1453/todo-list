@@ -303,40 +303,58 @@ export default function ReportingPage() {
     };
 
     const handleDownloadPDF = async () => {
-        if (!reportRef.current) return;
-        const toastId = toast.loading("Menyiapkan PDF Komprehensif...");
+        if (!reportRef.current) {
+            toast.error("Tidak dapat menemukan elemen laporan untuk dicetak.");
+            return;
+        }
+
+        const toastId = toast.loading("Sedang membuat PDF... Mohon tunggu");
 
         try {
             const element = reportRef.current;
-            const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+
+            // Wait a moment to ensure fonts/images are rendered
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const canvas = await html2canvas(element, {
+                scale: 2, // Retain high quality
+                useCORS: true, // Allow cross-origin images
+                logging: false, // Turn on if debugging needed
+                backgroundColor: '#ffffff',
+                windowWidth: element.scrollWidth,
+                windowHeight: element.scrollHeight
+            });
+
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
+
             const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            const pdfHeight = pdf.internal.pageSize.getHeight();
 
-            if (pdfHeight > 297) {
-                let heightLeft = pdfHeight;
-                let position = 0;
-                let pageHeight = 297;
+            const imgWidth = pdfWidth;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-                heightLeft -= pageHeight;
+            let heightLeft = imgHeight;
+            let position = 0;
 
-                while (heightLeft >= 0) {
-                    position = heightLeft - pdfHeight; // top pos
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-                    heightLeft -= pageHeight;
-                }
-            } else {
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            // First page
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            // Subsequent pages
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight; // Align to top of next page
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pdfHeight;
             }
 
-            pdf.save(`Laporan_Detail_${periodType}_${selectedDivisi}.pdf`);
-            toast.success("PDF Detail Berhasil diunduh!", { id: toastId });
-        } catch (e) {
-            console.error(e)
-            toast.error("Gagal membuat PDF", { id: toastId });
+            pdf.save(`Laporan_Kinerja_${selectedDivisi}_${format(new Date(), 'yyyyMMdd')}.pdf`);
+            toast.success("PDF berhasil diunduh!", { id: toastId });
+
+        } catch (error) {
+            console.error("PDF-GEN ERROR:", error);
+            toast.error("Gagal membuat PDF. Coba refresh halaman.", { id: toastId });
         }
     };
 
