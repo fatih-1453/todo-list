@@ -94,7 +94,7 @@ export default function ActionPlanPage() {
             // Generic Search (still useful for other fields like Lead or specific text in notes)
             const matchesSearch = !search ||
                 (p.lead?.toLowerCase().includes(search.toLowerCase()) ||
-                    p.notes?.toLowerCase().includes(search.toLowerCase()))
+                    p.output?.toLowerCase().includes(search.toLowerCase()))
 
             let matchesDate = true
             if (dateRange?.from && p.startDate) {
@@ -197,7 +197,7 @@ export default function ActionPlanPage() {
             "Divisi", "Div Pelaksana", "Klasifikasi"
         ]
         const rows = sortedAndFilteredPlans.map((p, i) => [
-            i + 1, p.pic, p.lead, p.program, p.notes, p.indikator, p.lokasi,
+            i + 1, p.pic, p.lead, p.program, p.output, p.indikator, p.lokasi,
             p.startDate ? format(new Date(p.startDate), 'yyyy-MM-dd') : '',
             p.endDate ? format(new Date(p.endDate), 'yyyy-MM-dd') : '',
             p.targetActivity, p.realActivity, p.status, p.targetReceiver,
@@ -231,7 +231,7 @@ export default function ActionPlanPage() {
                     pic: "Mochammad Sukamto",
                     lead: "Seleksi Rekrutmen",
                     program: "Program Rekrutmen Karyawan Baru",
-                    notes: "Melakukan proses seleksi administratif & wawancara",
+                    output: "Melakukan proses seleksi administratif & wawancara",
                     indikator: "Terpenuhinya kebutuhan",
                     lokasi: "Kantor Sawangan",
                     startDate: new Date().toISOString(),
@@ -547,7 +547,7 @@ export default function ActionPlanPage() {
                             </th>
                             <th className="px-4 py-3 border-b border-gray-100 text-left w-20 font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                             {[
-                                "No", "Nama", "Program", "Catatan", "Start Date", "End Date",
+                                "No", "Nama", "Program", "Output", "Start Date", "End Date",
                                 "Progress", "Status",
                                 "Target", "Real", "Indikator", "Lokasi", "Target Penerima", "Divisi"
                             ].map((h, i) => (
@@ -591,7 +591,7 @@ export default function ActionPlanPage() {
                                         <td className="px-4 py-3 text-gray-500">{globalIndex}</td>
                                         <td className="px-4 py-3 font-medium text-gray-900">{p.pic}</td>
                                         <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={p.program}>{p.program}</td>
-                                        <td className="px-4 py-3 text-gray-600 max-w-[200px] whitespace-normal break-words" title={p.notes}>{p.notes}</td>
+                                        <td className="px-4 py-3 text-gray-600 max-w-[200px] whitespace-normal break-words" title={p.output}>{p.output}</td>
 
                                         {/* Smart Dates */}
                                         <td className={`px-4 py-3 whitespace-nowrap ${isRowToday ? 'font-bold text-amber-900 bg-amber-200/50 rounded-md px-2' : 'text-gray-500'}`}>

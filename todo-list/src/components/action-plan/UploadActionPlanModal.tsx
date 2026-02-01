@@ -158,7 +158,7 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                 pic: getIdx(['nama', 'pic', 'person']),
                 lead: getIdx(['plan', 'lead', 'activity', 'kegiatan']), // Changed plan to lead
                 program: getIdx(['program']),
-                notes: getIdx(['catatan', 'notes', 'keterangan']),
+                output: getIdx(['catatan', 'notes', 'keterangan', 'output']),
                 indikator: getIdx(['indikator']),
                 lokasi: getIdx(['lokasi', 'location']),
                 startDate: getIdx(['start', 'mulai']),
@@ -185,7 +185,7 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                     pic: getVal(row, map.pic) || '',
                     lead: getVal(row, map.lead) || 'No Plan',
                     program: getVal(row, map.program) || '',
-                    notes: getVal(row, map.notes) || '',
+                    output: getVal(row, map.output) || '',
                     indikator: getVal(row, map.indikator) || '',
                     lokasi: getVal(row, map.lokasi) || '',
                     startDate: parseDate(getVal(row, map.startDate)),

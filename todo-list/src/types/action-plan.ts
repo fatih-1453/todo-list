@@ -34,7 +34,7 @@ export interface ActionPlan {
 
     // Status / Tracking
     status?: string // (Done/In Progress)
-    notes?: string // Catatan
+    output?: string // Output
     risk?: string // SDM & Risk analysis
 
     createdAt?: string

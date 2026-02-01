@@ -22,7 +22,7 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
         pic: "", // Nama
         lead: "", // Activity Name (was plan)
         program: "",
-        notes: "", // Catatan
+        output: "", // Output
 
         // Context/Details
         indikator: "",
@@ -56,7 +56,7 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                     pic: initialData.pic || "",
                     lead: initialData.lead || "",
                     program: initialData.program || "",
-                    notes: initialData.notes || "",
+                    output: initialData.output || "",
                     indikator: initialData.indikator || "",
                     lokasi: initialData.lokasi || "",
                     startDate: initialData.startDate ? new Date(initialData.startDate).toISOString().split('T')[0] : "",
@@ -78,7 +78,7 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                     pic: "",
                     lead: "",
                     program: "",
-                    notes: "",
+                    output: "",
                     indikator: "",
                     lokasi: "",
                     startDate: "",
@@ -254,8 +254,8 @@ export function CreateActionPlanModal({ isOpen, onClose, initialData }: CreateAc
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-semibold text-gray-500 uppercase">Catatan</label>
-                        <textarea name="notes" value={formData.notes} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none resize-none h-20" placeholder="Notes..." />
+                        <label className="text-xs font-semibold text-gray-500 uppercase">Output</label>
+                        <textarea name="output" value={formData.output} onChange={handleChange} className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-black/5 outline-none resize-none h-20" placeholder="Output..." />
                     </div>
 
                 </div>

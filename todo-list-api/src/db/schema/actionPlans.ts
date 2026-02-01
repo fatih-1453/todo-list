@@ -26,7 +26,6 @@ export const actionPlans = pgTable('action_plans', {
     // Dates
     startDate: timestamp('start_date'),
     endDate: timestamp('end_date'),
-    dueDate: timestamp('due_date'),
 
     // Metrics (Target & Realization)
     targetActivity: integer('target_activity').default(0),
@@ -40,7 +39,7 @@ export const actionPlans = pgTable('action_plans', {
 
     // Additional Info
     targetReceiver: text('target_receiver'), // Target Penerima
-    notes: text('notes'), // Catatan
+    output: text('output'), // Output (previously notes/catatan)
     risk: text('risk'), // SDM & Risk analysis
 
     createdAt: timestamp('created_at').defaultNow(),
