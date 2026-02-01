@@ -149,7 +149,7 @@ export default function LoginPage() {
                                                                 {item.quarter}
                                                             </span>
                                                         </div>
-                                                        <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-orange-600 transition-colors truncate">
+                                                        <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-orange-600 transition-colors line-clamp-1 group-hover:line-clamp-none">
                                                             {item.title}
                                                         </h3>
 
