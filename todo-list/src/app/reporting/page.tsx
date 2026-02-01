@@ -35,6 +35,7 @@ import jsPDF from 'jspdf'
 import { motion } from "framer-motion"
 import { toast } from "sonner"
 import { useUsers } from "@/hooks/useUsers"
+import { useTargets } from "@/hooks/useCanvassing"
 
 // Types
 type PeriodType = 'weekly' | 'monthly' | 'quarterly' | 'semester' | 'yearly';
@@ -69,6 +70,7 @@ export default function ReportingPage() {
     })
 
     const { data: users } = useUsers()
+    const { data: targets, isLoading: isLoadingTargets } = useTargets()
 
     // Extract Unique Divisions from Plans
     const uniqueDivisions = useMemo(() => {
@@ -388,6 +390,29 @@ export default function ReportingPage() {
     };
 
 
+    // Target vs Revenue Chart Data
+    const targetChartData = useMemo(() => {
+        if (!targets || !isReportGenerated) return [];
+        const { start, end } = getCalculatedDateRange();
+
+        return targets
+            .filter(t => {
+                const tStart = t.startDate ? new Date(t.startDate) : null;
+                const tEnd = t.endDate ? new Date(t.endDate) : null;
+
+                if (!tStart && !tEnd) return true;
+                if (tStart && tStart > end) return false;
+                if (tEnd && tEnd < start) return false;
+
+                return true;
+            })
+            .map(t => ({
+                name: t.title,
+                Target: Number(t.targetAmount) || 0,
+                Realisasi: Number(t.achievedAmount) || 0
+            }));
+    }, [targets, isReportGenerated, periodType, selectedYear, selectedMonth, selectedWeek, selectedQuarter, selectedSemester, dateRange]);
+
     const handleGenerate = () => {
         setIsReportGenerated(true);
         setTimeout(() => {
@@ -425,7 +450,7 @@ export default function ReportingPage() {
             // Force the inner container (if exists) to align left and expand
             // In our case 'element' IS the container ref, but check for its parent centering
             // We can try to modify children if needed, but usually modification of 'element' is enough if it's the capture target.
-            
+
             // Expand all overflow-x-auto containers and fix Gantt chart width
             const scrollContainers = element.querySelectorAll('.overflow-x-auto');
             const originalContainerStyles: { el: HTMLElement; styles: CSSStyleDeclaration['cssText'] }[] = [];
@@ -445,7 +470,7 @@ export default function ReportingPage() {
             chartContainers.forEach((el: any) => {
                 originalChartStyles.push({ el, styles: el.style.cssText });
                 // Slightly reduce width to prevent cutoff at right edge
-                el.style.width = '100%'; 
+                el.style.width = '100%';
                 el.style.height = '250px'; // Increase height slightly for better visibility
             });
 
@@ -478,7 +503,7 @@ export default function ReportingPage() {
             element.style.maxWidth = originalMaxWidth;
             element.style.padding = originalPadding;
             element.style.margin = originalMargin;
-            
+
             originalContainerStyles.forEach(({ el, styles }) => {
                 el.style.cssText = styles;
             });
@@ -666,9 +691,9 @@ export default function ReportingPage() {
                             <Button
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg shadow-indigo-200"
                                 onClick={handleGenerate}
-                                disabled={isLoadingPlans}
+                                disabled={isLoadingPlans || isLoadingTargets}
                             >
-                                {isLoadingPlans ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Search className="w-4 h-4 mr-2" />}
+                                {(isLoadingPlans || isLoadingTargets) ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Search className="w-4 h-4 mr-2" />}
                                 Generate Report
                             </Button>
                         </div>
@@ -768,6 +793,33 @@ export default function ReportingPage() {
                                                 <Legend wrapperStyle={{ fontSize: '10px' }} />
                                                 <Bar dataKey="Target" fill="#93c5fd" radius={[4, 4, 0, 0]} name="Target" />
                                                 <Bar dataKey="Realization" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Realisasi" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Section 2: Division Performance Matrix */}
+                            {/* Section: Target Analysis */}
+                            <section className="mb-10 page-break-inside-avoid">
+                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+                                    <Target className="w-4 h-4" />
+                                    Ketercapaian Target vs Penerimaan
+                                </h3>
+                                <div className="border border-slate-200 rounded-lg p-4">
+                                    <div className="h-[300px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={targetChartData}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                                                <YAxis tick={{ fontSize: 10 }} tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val} />
+                                                <ReTooltip
+                                                    formatter={(value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(value)}
+                                                    contentStyle={{ fontSize: '12px' }}
+                                                />
+                                                <Legend />
+                                                <Bar dataKey="Target" fill="#a78bfa" radius={[4, 4, 0, 0]} name="Target" />
+                                                <Bar dataKey="Realisasi" fill="#7c3aed" radius={[4, 4, 0, 0]} name="Realisasi" />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
