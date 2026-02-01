@@ -405,19 +405,43 @@ export default function ReportingPage() {
         const toastId = toast.loading("Sedang membuat PDF... Mohon tunggu");
 
         try {
+            // Create a clone to render full width/height without scrollbars
             const element = reportRef.current;
+            const clone = element.cloneNode(true) as HTMLElement;
+
+            // Style the clone to be fully expanded
+            clone.style.width = '1200px'; // Fixed width to ensure desktop layout
+            clone.style.height = 'auto';
+            clone.style.overflow = 'visible';
+            clone.style.position = 'absolute';
+            clone.style.top = '-9999px';
+            clone.style.left = '0'; // Align left
+
+            // Specific fix for Gantt Scroll
+            const ganttScrollContainer = clone.querySelectorAll('.overflow-x-auto');
+            ganttScrollContainer.forEach((el: any) => {
+                el.style.overflow = 'visible';
+                el.style.width = 'auto'; // allow expansion
+            });
+
+            // Specific Fix for Left Panel shadow overlapping or layout issues
+            // Maybe ensure left panel and right panel stack or flex correctly in print
+            // For now, let's keep the flex row but ensure the container is wide enough
+
+            document.body.appendChild(clone);
 
             // Wait a moment to ensure fonts/images are rendered
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 800));
 
-            const canvas = await html2canvas(element, {
-                scale: 2, // Retain high quality
-                useCORS: true, // Allow cross-origin images
-                logging: false, // Turn on if debugging needed
+            const canvas = await html2canvas(clone, {
+                scale: 1.5, // Slightly lower scale for performance if chart is huge
+                useCORS: true,
+                logging: false,
                 backgroundColor: '#ffffff',
-                windowWidth: element.scrollWidth,
-                windowHeight: element.scrollHeight
+                windowWidth: 1200, // Match clone width
             });
+
+            document.body.removeChild(clone); // Clean up
 
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
