@@ -424,6 +424,18 @@ export default function ReportingPage() {
                 el.style.width = 'auto'; // allow expansion
             });
 
+            // FIX: Recharts width(-1) error
+            // Explicitly set dimensions for all Recharts containers in the clone
+            const charts = clone.querySelectorAll('.recharts-responsive-container');
+            charts.forEach((chart: any) => {
+                chart.style.width = '1000px';
+                chart.style.height = '300px';
+                chart.style.position = 'relative';
+            });
+
+            // FIX: "lab" color error using forced legacy colors where possible
+            clone.style.colorScheme = 'light';
+
             // Specific Fix for Left Panel shadow overlapping or layout issues
             // Maybe ensure left panel and right panel stack or flex correctly in print
             // For now, let's keep the flex row but ensure the container is wide enough
