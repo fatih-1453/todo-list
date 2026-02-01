@@ -408,18 +408,24 @@ export default function ReportingPage() {
             const htmlToImage = await import('html-to-image');
             const element = reportRef.current;
 
-            // Store original styles to restore later
+            // Store original styles
             const originalOverflow = element.style.overflow;
             const originalWidth = element.style.width;
             const originalMaxWidth = element.style.maxWidth;
             const originalPadding = element.style.padding;
+            const originalMargin = element.style.margin;
 
-            // Set fixed width for consistent PDF layout (A4 aspect ratio friendly)
+            // Set fixed width and ALIGN LEFT by removing margins
             element.style.width = '800px';
-            element.style.maxWidth = '800px';
+            element.style.maxWidth = 'none'; // Remove max-width constraint
             element.style.overflow = 'visible';
-            element.style.padding = '24px';
+            element.style.padding = '20px 40px'; // Add some padding, but keep it tight
+            element.style.margin = '0'; // Remove auto margins (centering)
 
+            // Force the inner container (if exists) to align left and expand
+            // In our case 'element' IS the container ref, but check for its parent centering
+            // We can try to modify children if needed, but usually modification of 'element' is enough if it's the capture target.
+            
             // Expand all overflow-x-auto containers and fix Gantt chart width
             const scrollContainers = element.querySelectorAll('.overflow-x-auto');
             const originalContainerStyles: { el: HTMLElement; styles: CSSStyleDeclaration['cssText'] }[] = [];
@@ -433,23 +439,22 @@ export default function ReportingPage() {
                 el.style.maxWidth = '100%';
             });
 
-            // Fix chart containers to have proper dimensions
+            // Fix chart containers
             const chartContainers = element.querySelectorAll('.recharts-responsive-container');
             const originalChartStyles: { el: HTMLElement; styles: string }[] = [];
             chartContainers.forEach((el: any) => {
                 originalChartStyles.push({ el, styles: el.style.cssText });
-                el.style.width = '100%';
-                el.style.height = '200px';
-                el.style.minHeight = '200px';
+                // Slightly reduce width to prevent cutoff at right edge
+                el.style.width = '100%'; 
+                el.style.height = '250px'; // Increase height slightly for better visibility
             });
 
-            // Fix grid layouts to stack properly
+            // Fix grid layouts
             const gridContainers = element.querySelectorAll('.grid');
             const originalGridStyles: { el: HTMLElement; styles: string }[] = [];
             gridContainers.forEach((el: any) => {
                 originalGridStyles.push({ el, styles: el.style.cssText });
-                // Force single column for narrow PDF
-                if (el.classList.contains('grid-cols-2') || el.classList.contains('md:grid-cols-2')) {
+                if (el.classList.contains('grid-cols-2') || el.classList.contains('md:grid-cols-2') || el.classList.contains('lg:grid-cols-4')) {
                     el.style.display = 'flex';
                     el.style.flexDirection = 'column';
                     el.style.gap = '16px';
@@ -472,6 +477,8 @@ export default function ReportingPage() {
             element.style.width = originalWidth;
             element.style.maxWidth = originalMaxWidth;
             element.style.padding = originalPadding;
+            element.style.margin = originalMargin;
+            
             originalContainerStyles.forEach(({ el, styles }) => {
                 el.style.cssText = styles;
             });
