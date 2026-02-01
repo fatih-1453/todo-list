@@ -43,6 +43,13 @@
       "when": 1769912183353,
       "tag": "0005_stormy_kid_colt",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1769964876771,
+      "tag": "0006_wise_talisman",
+      "breakpoints": true
     }
   ]
 }
