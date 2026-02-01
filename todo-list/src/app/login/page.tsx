@@ -53,43 +53,43 @@ export default function LoginPage() {
         })
     }
 
-    // Precise coordinates for Pins to match the new SVG paths
+    // Precise coordinates matching visual segments
     const positions = [
-        { id: 1, x: 22, y: 32, labelPos: 'left' },   // Q1'25
-        { id: 2, x: 45, y: 35, labelPos: 'top' },    // Q2'25
-        { id: 3, x: 65, y: 48, labelPos: 'right' },  // Q3'25
-        { id: 4, x: 68, y: 72, labelPos: 'right' },  // Q4'25
-        { id: 5, x: 48, y: 88, labelPos: 'bottom' }, // Q1'26
-        { id: 6, x: 22, y: 92, labelPos: 'left' }    // Q2'26
+        { id: 1, x: 18, y: 35, labelPos: 'left' },   // Segment 1 (Teal Light)
+        { id: 2, x: 42, y: 32, labelPos: 'top' },    // Segment 2 (Teal Medium)
+        { id: 3, x: 62, y: 45, labelPos: 'right' },  // Segment 3 (Grey Curve)
+        { id: 4, x: 62, y: 68, labelPos: 'right' },  // Segment 4 (Blue Curve)
+        { id: 5, x: 45, y: 82, labelPos: 'bottom' }, // Segment 5 (Purple Straight)
+        { id: 6, x: 20, y: 85, labelPos: 'left' }    // Segment 6 (Arrow)
     ]
 
     return (
         <div className="min-h-screen flex flex-col lg:flex-row font-sans bg-gray-50 overflow-hidden">
             {/* Left Side - Visuals */}
-            <div className="w-full lg:w-[60%] relative flex flex-col items-center justify-center p-4 lg:p-12 bg-[#F8F9FA]">
-                <div className="absolute top-10 left-10">
+            <div className="w-full lg:w-[60%] relative flex flex-col items-center justify-center p-4 lg:p-12 bg-[#F0F2F5]">
+                <div className="absolute top-10 left-10 z-10">
                     <h1 className="text-4xl font-light text-gray-800 tracking-tight">
                         <span className="font-bold">ROADMAP</span> TEMPLATE
                     </h1>
                     <p className="text-gray-400 text-xs mt-1 tracking-widest uppercase">Lorem ipsum dolor sit amet</p>
                 </div>
 
-                <div className="absolute top-10 right-10 flex items-center gap-2 opacity-60">
+                <div className="absolute top-10 right-10 flex items-center gap-2 opacity-60 z-10">
                     <span className="font-bold text-gray-700">MY PRODUCT</span> <span className="font-light text-gray-500">ROADMAP</span>
                 </div>
 
                 {loadingRoadmap ? (
                     <Loader2 className="w-10 h-10 animate-spin text-gray-300" />
                 ) : (
-                    <div className="relative w-full max-w-4xl aspect-[16/9] mt-10 scale-90 lg:scale-100">
-                        {/* SVG Layer */}
+                    <div className="relative w-full max-w-5xl aspect-[16/9] mt-10 scale-95 lg:scale-105">
+                        {/* 3D Segmented SVG Roadmap */}
                         <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
                             <defs>
-                                <filter id="soft-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                                    <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" />
-                                    <feOffset dx="2" dy="4" result="offsetblur" />
+                                <filter id="drop-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                                    <feGaussianBlur in="SourceAlpha" stdDeviation="1" />
+                                    <feOffset dx="0" dy="2" result="offsetblur" />
                                     <feComponentTransfer>
-                                        <feFuncA type="linear" slope="0.2" />
+                                        <feFuncA type="linear" slope="0.3" />
                                     </feComponentTransfer>
                                     <feMerge>
                                         <feMergeNode />
@@ -98,34 +98,53 @@ export default function LoginPage() {
                                 </filter>
                             </defs>
 
-                            {/* 1. Teal Light (Start) */}
-                            <path d="M 5 35 L 30 32 L 30 42 L 5 45 Z" fill="#D0F8F3" filter="url(#soft-shadow)" />
+                            {/* Segment 1: Start (Teal Light) */}
+                            {/* 3D Side */}
+                            <path d="M 5 40 L 30 38 L 30 40 L 5 42 Z" fill="#A0E0D8" />
+                            {/* Top Face */}
+                            <path d="M 5 35 L 30 33 L 30 38 L 5 40 Z" fill="#CFFBF6" filter="url(#drop-shadow)" />
 
-                            {/* 2. Teal Medium */}
-                            <path d="M 32 32 L 55 35 L 53 46 L 32 42 Z" fill="#8BEDE2" filter="url(#soft-shadow)" />
+                            {/* Segment 2: Middle Top (Teal Medium) */}
+                            {/* 3D Side */}
+                            <path d="M 32 38 L 55 40 L 55 42 L 32 40 Z" fill="#6BDDD0" />
+                            {/* Top Face */}
+                            <path d="M 32 33 L 55 35 L 55 40 L 32 38 Z" fill="#8BEDE2" filter="url(#drop-shadow)" />
 
-                            {/* 3. Teal Dark (Curve Down) */}
-                            <path d="M 57 36 C 75 40, 80 50, 75 60 L 65 60 C 68 52, 65 48, 55 46 Z" fill="#58D8CD" filter="url(#soft-shadow)" />
+                            {/* Segment 3: Curve Down (Grey) */}
+                            {/* 3D Side */}
+                            <path d="M 57 40 C 75 42, 78 52, 72 62 L 68 62 C 74 52, 71 44, 57 42 Z" fill="#888" />
+                            {/* Top Face */}
+                            <path d="M 57 35 C 75 37, 78 47, 72 57 L 62 57 C 68 47, 65 39, 57 35 Z" fill="#A0AEC0" filter="url(#drop-shadow)" />
 
-                            {/* 4. Blue (Curve Back) */}
-                            <path d="M 74 63 C 70 80, 60 85, 40 90 L 38 80 C 55 78, 62 72, 64 63 Z" fill="#6CB2EB" filter="url(#soft-shadow)" />
+                            {/* Segment 4: Curve Back (Blue) */}
+                            {/* 3D Side */}
+                            <path d="M 70 65 C 68 75, 60 82, 45 85 L 43 85 C 58 82, 65 75, 66 65 Z" fill="#4A90E2" />
+                            {/* Top Face */}
+                            <path d="M 71 60 C 69 70, 61 77, 46 80 L 41 80 C 60 77, 68 67, 70 60 Z" fill="#6CB2EB" filter="url(#drop-shadow)" />
 
-                            {/* 5. Purple Light (Bottom) */}
-                            <path d="M 36 90 L 15 88 L 18 78 L 36 80 Z" fill="#7E9BF3" filter="url(#soft-shadow)" />
+                            {/* Segment 5: Bottom Straight (Purple) */}
+                            {/* 3D Side */}
+                            <path d="M 43 87 L 22 84 L 22 86 L 43 89 Z" fill="#6B46C1" />
+                            {/* Top Face */}
+                            <path d="M 43 82 L 22 79 L 22 84 L 43 87 Z" fill="#805AD5" filter="url(#drop-shadow)" />
 
-                            {/* 6. Arrow (Pointer) */}
-                            <path d="M 13 88 L -5 80 L 16 78 L 13 88 Z" fill="#8B5CF6" filter="url(#soft-shadow)" />
+                            {/* Segment 6: Arrow Head (Dark Purple) */}
+                            {/* 3D Side */}
+                            <path d="M 20 86 L -5 82 L 18 78 L 20 86 Z" fill="#553C9A" />
+                            {/* Top Face */}
+                            <path d="M 20 81 L -5 77 L 18 73 L 20 81 Z" fill="#8B5CF6" filter="url(#drop-shadow)" />
 
-                            {/* Text Labels on Path */}
-                            <text x="15" y="47" fontSize="2" fill="white" fontWeight="bold" opacity="0.6">Q1'25</text>
-                            <text x="42" y="48" fontSize="2" fill="white" fontWeight="bold" opacity="0.6">Q2'25</text>
-                            <text x="60" y="58" fontSize="2" fill="white" fontWeight="bold" opacity="0.6">Q3'25</text>
-                            <text x="58" y="78" fontSize="2" fill="white" fontWeight="bold" opacity="0.6">Q4'25</text>
-                            <text x="35" y="82" fontSize="2" fill="white" fontWeight="bold" opacity="0.6">Q1'26</text>
-                            <text x="20" y="82" fontSize="2" fill="white" fontWeight="bold" opacity="0.6">Q2'26</text>
+
+                            {/* Labels ON the ribbon */}
+                            <text x="15" y="39" fontSize="1.5" fill="#555" fontWeight="bold">Q1'25</text>
+                            <text x="42" y="39" fontSize="1.5" fill="#555" fontWeight="bold">Q2'25</text>
+                            <text x="60" y="45" fontSize="1.5" fill="white" fontWeight="bold">Q3'25</text>
+                            <text x="58" y="70" fontSize="1.5" fill="white" fontWeight="bold">Q4'25</text>
+                            <text x="32" y="85" fontSize="1.5" fill="white" fontWeight="bold">Q1'26</text>
+                            <text x="10" y="81" fontSize="1.5" fill="white" fontWeight="bold">Q2'26</text>
                         </svg>
 
-                        {/* Interactive Pins */}
+                        {/* Pins & Cards */}
                         {roadmapItems.slice(0, 6).map((item, index) => {
                             const pos = positions[index];
                             if (!pos) return null;
@@ -133,9 +152,9 @@ export default function LoginPage() {
                             return (
                                 <motion.div
                                     key={item.id}
-                                    initial={{ opacity: 0, scale: 0 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                                    initial={{ opacity: 0, y: -20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: index * 0.15 }}
                                     className="absolute"
                                     style={{
                                         left: `${pos.x}%`,
@@ -143,40 +162,33 @@ export default function LoginPage() {
                                         transform: 'translate(-50%, -100%)'
                                     }}
                                 >
-                                    <div className="relative group">
-                                        {/* Pin Shape */}
-                                        <div className="relative flex flex-col items-center">
-                                            {/* Pin Head */}
-                                            <div
-                                                className="w-10 h-10 rounded-full border-4 border-white shadow-lg flex items-center justify-center z-20 transition-transform group-hover:scale-110"
-                                                style={{ backgroundColor: item.color || '#3B82F6' }}
-                                            >
-                                                <div className="w-3 h-3 bg-white rounded-full" />
+                                    <div className="relative group flex flex-col items-center">
+                                        {/* Pin */}
+                                        <div className="relative z-20 transition-transform duration-300 group-hover:scale-110">
+                                            <div style={{ color: item.color || '#4FD1C5' }}>
+                                                <svg width="40" height="50" viewBox="0 0 40 50" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
+                                                    <path d="M20 0C8.954 0 0 8.954 0 20C0 35 20 50 20 50C20 50 40 35 40 20C40 8.954 31.046 0 20 0Z" fill="currentColor" />
+                                                    <circle cx="20" cy="20" r="8" fill="white" />
+                                                </svg>
                                             </div>
-                                            {/* Pin Point */}
-                                            <div
-                                                className="w-4 h-4 -mt-2 rotate-45 z-10"
-                                                style={{ backgroundColor: item.color || '#3B82F6' }}
-                                            />
-                                            {/* Shadow */}
-                                            <div className="w-8 h-2 bg-black/20 rounded-full blur-sm mt-1" />
                                         </div>
+                                        {/* Pin Shadow */}
+                                        <div className="w-8 h-2 bg-black/20 rounded-full blur-sm -mt-1 z-10" />
 
-                                        {/* Info Card */}
+                                        {/* Content Card */}
                                         <div className={`
-                                            absolute w-40 z-30 pointer-events-none group-hover:pointer-events-auto
-                                            transition-all duration-300 opacity-90 group-hover:opacity-100
-                                            ${pos.labelPos === 'left' ? 'right-[120%] top-0 text-right' : ''}
-                                            ${pos.labelPos === 'right' ? 'left-[120%] top-0 text-left' : ''}
-                                            ${pos.labelPos === 'top' ? 'bottom-[120%] left-1/2 -translate-x-1/2 text-center' : ''}
-                                            ${pos.labelPos === 'bottom' ? 'to-[120%] left-1/2 -translate-x-1/2 text-center' : ''}
+                                            absolute w-48 pointer-events-none group-hover:pointer-events-auto z-30
+                                            ${pos.labelPos === 'left' ? 'right-[110%] top-0 text-right pr-4' : ''}
+                                            ${pos.labelPos === 'right' ? 'left-[110%] top-0 text-left pl-4' : ''}
+                                            ${pos.labelPos === 'top' ? 'bottom-[110%] left-1/2 -translate-x-1/2 text-center pb-2' : ''}
+                                            ${pos.labelPos === 'bottom' ? 'top-[110%] left-1/2 -translate-x-1/2 text-center pt-2' : ''}
                                         `}>
                                             <div className={`flex items-center gap-2 mb-1 ${pos.labelPos === 'left' ? 'justify-end' : pos.labelPos === 'right' ? 'justify-start' : 'justify-center'}`}>
-                                                {pos.labelPos === 'left' && <div className="w-2 h-2 rounded-full" style={{ background: item.color }} />}
-                                                <h3 className="font-bold text-sm uppercase text-gray-800 leading-none">{item.title}</h3>
-                                                {pos.labelPos !== 'left' && <div className="w-2 h-2 rounded-full" style={{ background: item.color }} />}
+                                                {pos.labelPos === 'left' && <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />}
+                                                <h3 className="font-bold text-sm uppercase tracking-tight text-gray-800" style={{ color: item.color }}>{item.title}</h3>
+                                                {pos.labelPos !== 'left' && <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />}
                                             </div>
-                                            <p className="text-[10px] text-gray-500 font-medium leading-tight">
+                                            <p className="text-xs text-gray-500 font-medium leading-relaxed">
                                                 {item.description}
                                             </p>
                                         </div>
