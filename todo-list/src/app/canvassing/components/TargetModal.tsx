@@ -53,10 +53,10 @@ export const TargetModal: React.FC<TargetModalProps> = ({ isOpen, onClose, itemT
                     title: editableFields.title,
                     type: editableFields.type,
                     status: editableFields.status,
-                    targetAmount: Number(editableFields.targetAmount).toString(), // Ensure string for numeric type
-                    achievedAmount: Number(editableFields.achievedAmount).toString(),
-                    startDate: data.startDate ? new Date(data.startDate).toISOString() : null,
-                    endDate: data.endDate ? new Date(data.endDate).toISOString() : null,
+                    targetAmount: Number(editableFields.targetAmount), // Keep as number for Target type
+                    achievedAmount: Number(editableFields.achievedAmount),
+                    startDate: data.startDate ? new Date(data.startDate).toISOString() : undefined,
+                    endDate: data.endDate ? new Date(data.endDate).toISOString() : undefined,
                 };
 
                 await updateMutation.mutateAsync({
