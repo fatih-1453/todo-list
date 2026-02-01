@@ -126,17 +126,19 @@ export default function LoginPage() {
                                                 {/* Hover Popover Container - Positioned absolutely relative to this half */}
                                                 <div className="relative w-full max-w-sm">
 
-                                                    {/* The Card */}
-                                                    <div className={`
+                                                    {/* The Card - Added tabIndex for mobile focus support */}
+                                                    <div
+                                                        tabIndex={0}
+                                                        className={`
                                                         relative p-2.5 lg:p-3 bg-white rounded-xl shadow-sm border border-gray-100 w-full transition-all duration-300
                                                         ${item.status === 'in-progress' ? 'ring-1 ring-orange-500/20 bg-orange-50/5' : ''}
-                                                        hover:shadow-lg hover:border-orange-200 hover:z-50
-                                                        group-hover:scale-[1.02]
+                                                        hover:shadow-lg hover:border-orange-200 hover:z-50 focus:shadow-lg focus:border-orange-200 focus:z-50 focus:outline-none
+                                                        group-hover:scale-[1.02] group-focus:scale-[1.02]
                                                     `}>
                                                         {/* Arrow Pointer */}
                                                         <div className={`
                                                             absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white border-t border-r border-gray-100 rotate-45 hidden lg:block
-                                                            ${isEven ? '-right-[5px] border-l-0 border-b-0 group-hover:border-orange-200' : '-left-[5px] border-t-0 border-r-0 border-b border-l group-hover:border-orange-200'}
+                                                            ${isEven ? '-right-[5px] border-l-0 border-b-0 group-hover:border-orange-200 group-focus:border-orange-200' : '-left-[5px] border-t-0 border-r-0 border-b border-l group-hover:border-orange-200 group-focus:border-orange-200'}
                                                         `}></div>
 
                                                         <div className="flex justify-between items-center mb-0.5">
@@ -149,20 +151,20 @@ export default function LoginPage() {
                                                                 {item.quarter}
                                                             </span>
                                                         </div>
-                                                        <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-orange-600 transition-colors line-clamp-1 group-hover:line-clamp-none">
+                                                        <h3 className="text-sm font-bold text-gray-900 leading-tight group-hover:text-orange-600 group-focus:text-orange-600 transition-colors line-clamp-1 group-hover:line-clamp-none group-focus:line-clamp-none">
                                                             {item.title}
                                                         </h3>
 
                                                         {/* Truncated Description (Visible Default) */}
-                                                        <p className="text-[10px] text-gray-400 leading-snug mt-0.5 line-clamp-1 group-hover:opacity-0 transition-opacity duration-0">
+                                                        <p className="text-[10px] text-gray-400 leading-snug mt-0.5 line-clamp-1 group-hover:opacity-0 group-focus:opacity-0 transition-opacity duration-0">
                                                             {item.description}
                                                         </p>
 
-                                                        {/* Full Description (Visible Hover - Overlay) */}
+                                                        {/* Full Description (Visible Hover & Focus - Overlay) */}
                                                         {(() => {
                                                             const isBottomItem = item.quarter.includes("2029") || item.quarter.includes("2030");
                                                             return (
-                                                                <div className={`absolute left-0 w-full bg-white p-3 rounded-xl shadow-xl border border-gray-100 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200 z-50 text-left ${isBottomItem ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+                                                                <div className={`absolute left-0 w-full bg-white p-3 rounded-xl shadow-xl border border-gray-100 opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus:pointer-events-auto transition-all duration-200 z-50 text-left ${isBottomItem ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
                                                                     <p className="text-xs text-gray-600 leading-relaxed font-medium">
                                                                         {item.description}
                                                                     </p>
