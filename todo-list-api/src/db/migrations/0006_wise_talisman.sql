@@ -1,4 +1,4 @@
-CREATE TABLE "transactions" (
+CREATE TABLE IF NOT EXISTS "transactions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"org_id" text NOT NULL,
 	"donation_method" text,
@@ -17,8 +17,25 @@ CREATE TABLE "transactions" (
 	CONSTRAINT "transactions_transaction_number_unique" UNIQUE("transaction_number")
 );
 --> statement-breakpoint
-ALTER TABLE "action_plans" ADD COLUMN "output" text;--> statement-breakpoint
-ALTER TABLE "action_plans" ADD COLUMN "keterangan" text;--> statement-breakpoint
-ALTER TABLE "transactions" ADD CONSTRAINT "transactions_org_id_organizations_id_fk" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "action_plans" DROP COLUMN "due_date";--> statement-breakpoint
-ALTER TABLE "action_plans" DROP COLUMN "notes";
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='action_plans' AND column_name='output') THEN
+        ALTER TABLE "action_plans" ADD COLUMN "output" text;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='action_plans' AND column_name='keterangan') THEN
+        ALTER TABLE "action_plans" ADD COLUMN "keterangan" text;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='action_plans' AND column_name='due_date') THEN
+        ALTER TABLE "action_plans" DROP COLUMN "due_date";
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='action_plans' AND column_name='notes') THEN
+        ALTER TABLE "action_plans" DROP COLUMN "notes";
+    END IF;
+END $$;
+--> statement-breakpoint
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name='transactions_org_id_organizations_id_fk') THEN
+        ALTER TABLE "transactions" ADD CONSTRAINT "transactions_org_id_organizations_id_fk" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;
+    END IF;
+END $$;
