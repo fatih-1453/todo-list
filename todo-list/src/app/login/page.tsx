@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
 import { apiClient } from "@/lib/api-client"
-import { Loader2, Mail, Lock, CheckCircle2, Circle, ArrowRight } from "lucide-react"
+import { Loader2, Mail, Lock, CheckCircle2, Circle, Sparkles } from "lucide-react"
 import { motion } from "framer-motion"
 
 type RoadmapItem = {
@@ -17,16 +17,6 @@ type RoadmapItem = {
     displayOrder: number
     color: string
 }
-
-// Reference colors from the image
-const STAGE_COLORS = [
-    "#F43F5E", // Red/Pink
-    "#FBBF24", // Yellow/Orange
-    "#10B981", // Green
-    "#0EA5E9", // Blue
-    "#1E293B", // Dark Blue/Black
-    "#8B5CF6"  // Purple (Extra)
-]
 
 export default function LoginPage() {
     const [email, setEmail] = useState("")
@@ -64,157 +54,110 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col lg:flex-row bg-white font-sans overflow-hidden">
+        <div className="min-h-screen flex flex-col lg:flex-row font-sans bg-white overflow-hidden">
 
-            {/* Left/Main Area - Winding Roadmap */}
-            <div className="w-full lg:w-[65%] xl:w-[70%] bg-gray-50 flex flex-col p-6 lg:p-12 relative overflow-y-auto">
+            {/* Left Side - The "Perfect" Visual */}
+            <div className="w-full lg:w-[65%] xl:w-[70%] bg-slate-50 relative flex flex-col items-center justify-center p-8 overflow-hidden">
 
-                <div className="flex justify-between items-end mb-12">
-                    <div>
-                        <h1 className="text-4xl font-bold text-gray-900 tracking-tight">ROADMAP</h1>
-                        <p className="text-gray-500 mt-2">Our strategic journey and milestones.</p>
-                    </div>
+                {/* Brand Ambient Background */}
+                <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                    <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-orange-200/30 blur-[120px]" />
+                    <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-green-200/30 blur-[120px]" />
                 </div>
 
-                {loadingRoadmap ? (
-                    <div className="flex-1 flex items-center justify-center">
-                        <Loader2 className="w-10 h-10 animate-spin text-gray-300" />
-                    </div>
-                ) : (
-                    <div className="relative flex-1 min-h-[600px] flex gap-8">
-                        {/* 1. Timeline Column (Dates & Blocks) */}
-                        <div className="flex flex-col w-48 lg:w-64 flex-shrink-0 pt-4 relative">
-                            {roadmapItems.map((item, index) => {
-                                const color = STAGE_COLORS[index % STAGE_COLORS.length];
-                                return (
-                                    <div key={item.id} className="h-32 mb-8 relative flex items-center">
-                                        {/* Colored Block */}
-                                        <div
-                                            className="w-full h-full rounded-l-xl rounded-r-none shadow-sm flex flex-col justify-center px-4 relative z-10 transition-transform hover:scale-105 origin-left"
-                                            style={{ backgroundColor: color }}
-                                        >
-                                            <p className="text-white/80 text-xs uppercase font-bold tracking-wider mb-1">
-                                                {item.quarter}
-                                            </p>
-                                            <h3 className="text-white font-bold text-sm lg:text-base leading-snug">
-                                                {item.title}
-                                            </h3>
-                                        </div>
-
-                                        {/* Connector Number */}
-                                        <div
-                                            className="absolute -right-6 w-12 h-12 rounded-full border-4 border-gray-50 bg-white flex items-center justify-center z-20 font-bold text-lg shadow-md"
-                                            style={{ color: color }}
-                                        >
-                                            {index + 1}
-                                        </div>
-                                    </div>
-                                )
-                            })}
-
-                            {/* Connector Line running down the numbers */}
-                            <div className="absolute right-0 top-16 bottom-16 w-[2px] bg-gray-200 -z-10" />
+                <div className="relative z-10 w-full max-w-4xl h-full flex flex-col">
+                    <div className="mb-10 text-center">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full shadow-sm border border-gray-100 mb-4">
+                            <Sparkles className="w-3 h-3 text-orange-500" />
+                            <span className="text-xs font-semibold tracking-wide text-gray-600 uppercase">Strategic Roadmap</span>
                         </div>
+                        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Building the <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-green-600">Future</span></h1>
+                    </div>
 
-                        {/* 2. Process Area (Winding Path) */}
-                        <div className="flex-1 relative pt-20">
-                            <svg className="w-full h-full absolute top-0 left-0 pointer-events-none" style={{ minHeight: '100%' }}>
-                                <defs>
-                                    <linearGradient id="gradientPath" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        {STAGE_COLORS.map((c, i) => (
-                                            <stop key={i} offset={`${(i / (STAGE_COLORS.length - 1)) * 100}%`} stopColor={c} />
-                                        ))}
-                                    </linearGradient>
-                                </defs>
+                    {loadingRoadmap ? (
+                        <div className="flex-1 flex items-center justify-center">
+                            <Loader2 className="w-10 h-10 animate-spin text-gray-300" />
+                        </div>
+                    ) : (
+                        <div className="flex-1 relative overflow-y-auto pr-4 scrollbar-hide mask-fade-bottom">
+                            {/* Central Line */}
+                            <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-gray-200 -translate-x-1/2 rounded-full hidden lg:block" />
+                            <motion.div
+                                className="absolute left-1/2 top-4 w-[2px] bg-gradient-to-b from-orange-500 via-green-500 to-blue-500 -translate-x-1/2 rounded-full hidden lg:block"
+                                initial={{ height: 0 }}
+                                animate={{ height: '95%' }}
+                                transition={{ duration: 1.5, ease: 'easeOut' }}
+                            />
 
-                                {/* Draw Winding Path */}
-                                {roadmapItems.map((_, index) => {
-                                    if (index >= roadmapItems.length - 1) return null;
-
-                                    // Calculate relative coordinates
-                                    const yStart = (index * 160) + 64; // Base block height + spacing
-                                    const yEnd = ((index + 1) * 160) + 64;
-                                    const xStart = 20; // Near numbers
-                                    const xLoop = 300 + (index % 2 * 50); // Loop width variation
-
-                                    // Generate Path Data for "Loop Right" style
-                                    // Start -> Right -> Curve Down -> Left -> End
-                                    const pathD = `
-                                        M ${xStart} ${yStart} 
-                                        L ${xLoop} ${yStart} 
-                                        Q ${xLoop + 60} ${yStart} ${xLoop + 60} ${yStart + 80} 
-                                        Q ${xLoop + 60} ${yEnd} ${xLoop} ${yEnd} 
-                                        L ${xStart} ${yEnd}
-                                    `;
-
-                                    const colorStart = STAGE_COLORS[index % STAGE_COLORS.length];
-                                    const colorEnd = STAGE_COLORS[(index + 1) % STAGE_COLORS.length];
-
+                            <div className="space-y-12 lg:space-y-0 lg:relative pb-12">
+                                {roadmapItems.map((item, index) => {
+                                    const isEven = index % 2 === 0;
                                     return (
-                                        <g key={index}>
-                                            {/* Gradient Pipe */}
-                                            <path
-                                                d={pathD}
-                                                fill="none"
-                                                stroke={`url(#grad-${index})`}
-                                                strokeWidth="24"
-                                                strokeLinecap="round"
-                                                className="opacity-20"
-                                            />
-                                            {/* Core Line */}
-                                            <path
-                                                d={pathD}
-                                                fill="none"
-                                                stroke={`url(#grad-${index})`}
-                                                strokeWidth="4"
-                                                strokeLinecap="round"
-                                                strokeDasharray="8 4"
-                                            />
+                                        <motion.div
+                                            key={item.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.15, duration: 0.5 }}
+                                            className={`flex flex-col lg:flex-row items-center w-full ${isEven ? 'lg:flex-row-reverse' : ''}`}
+                                        >
+                                            {/* Side Content (Empty for spacing on desktop to create alternation) */}
+                                            <div className="w-full lg:w-1/2" />
 
-                                            {/* Gradient Def just for this segment */}
-                                            <defs>
-                                                <linearGradient id={`grad-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                                                    <stop offset="0%" stopColor={colorStart} />
-                                                    <stop offset="100%" stopColor={colorEnd} />
-                                                </linearGradient>
-                                            </defs>
-                                        </g>
+                                            {/* Center Node */}
+                                            <div className="relative z-10 flex-shrink-0 my-4 lg:my-0 px-4">
+                                                <div className={`
+                                                    w-10 h-10 rounded-full flex items-center justify-center shadow-[0_0_0_4px_white] border-2 transition-all duration-500
+                                                    ${item.status === 'completed' ? 'bg-white border-green-500 text-green-600' :
+                                                        item.status === 'in-progress' ? 'bg-orange-500 border-orange-500 text-white scale-125 shadow-orange-200' :
+                                                            'bg-white border-gray-300 text-gray-300'}
+                                                `}>
+                                                    {item.status === 'completed' ? <CheckCircle2 className="w-5 h-5" /> :
+                                                        item.status === 'in-progress' ? <Loader2 className="w-5 h-5 animate-spin" /> :
+                                                            <Circle className="w-4 h-4" />}
+                                                </div>
+                                            </div>
+
+                                            {/* Card Content */}
+                                            <div className={`w-full lg:w-1/2 flex ${isEven ? 'lg:justify-end pr-0 lg:pr-8' : 'lg:justify-start pl-0 lg:pl-8'}`}>
+                                                <div className={`
+                                                    relative p-6 bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-md group hover:shadow-lg transition-all hover:-translate-y-1
+                                                    ${item.status === 'in-progress' ? 'ring-2 ring-orange-500/10' : ''}
+                                                `}>
+                                                    {/* Arrow Pointer */}
+                                                    <div className={`
+                                                        absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-t border-r border-gray-100 rotate-45 hidden lg:block
+                                                        ${isEven ? '-right-[7px] border-l-0 border-b-0' : '-left-[7px] border-t-0 border-r-0 border-b border-l'}
+                                                    `}></div>
+
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <span className={`
+                                                            px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider
+                                                            ${item.status === 'completed' ? 'bg-green-50 text-green-700' :
+                                                                item.status === 'in-progress' ? 'bg-orange-50 text-orange-700' :
+                                                                    'bg-gray-100 text-gray-500'}
+                                                        `}>
+                                                            {item.quarter}
+                                                        </span>
+                                                    </div>
+                                                    <h3 className="text-lg font-bold text-gray-900 mb-1 leading-tight group-hover:text-orange-600 transition-colors">
+                                                        {item.title}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-500 leading-relaxed">
+                                                        {item.description}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </motion.div>
                                     )
                                 })}
-                            </svg>
-
-                            {/* Content Nodes on the "Shelves" */}
-                            {roadmapItems.map((item, index) => {
-                                const yPos = (index * 160) + 64;
-
-                                return (
-                                    <motion.div
-                                        key={item.id}
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        transition={{ delay: index * 0.2 }}
-                                        className="absolute left-24 top-0 w-64 p-4 bg-white rounded-xl shadow-lg border border-gray-100 group hover:-translate-y-1 transition-transform cursor-pointer"
-                                        style={{ top: yPos - 50 }} // Offset to center on line
-                                    >
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div className={`p-2 rounded-lg bg-opacity-10`} style={{ backgroundColor: STAGE_COLORS[index % STAGE_COLORS.length] }}>
-                                                {item.status === 'completed' ? <CheckCircle2 className="w-4 h-4" color={STAGE_COLORS[index % STAGE_COLORS.length]} /> : <Circle className="w-4 h-4" color={STAGE_COLORS[index % STAGE_COLORS.length]} />}
-                                            </div>
-                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{item.status}</span>
-                                        </div>
-                                        <p className="text-gray-600 text-xs leading-relaxed line-clamp-2">
-                                            {item.description}
-                                        </p>
-                                    </motion.div>
-                                )
-                            })}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
-            {/* Right Side - Login Form */}
-            <div className="w-full lg:w-[35%] xl:w-[30%] bg-white border-l border-gray-100 shadow-2xl z-20 flex flex-col justify-center p-8 lg:p-12">
+            {/* Right Side - Login Form (Consistent & Clean) */}
+            <div className="w-full lg:w-[35%] xl:w-[30%] bg-white border-l border-gray-50 shadow-2xl shadow-gray-200/50 z-20 flex flex-col justify-center p-8 lg:p-12">
                 <div className="max-w-xs mx-auto w-full">
                     <div className="mb-8 text-center">
                         <div className="w-full h-24 relative mb-4 flex justify-center">
