@@ -814,7 +814,7 @@ export default function ReportingPage() {
                                                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                                                 <YAxis tick={{ fontSize: 10 }} tickFormatter={(val) => val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : val} />
                                                 <ReTooltip
-                                                    formatter={(value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(value)}
+                                                    formatter={(value: any) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(value || 0))}
                                                     contentStyle={{ fontSize: '12px' }}
                                                 />
                                                 <Legend />
