@@ -255,7 +255,19 @@ export default function ReportingPage() {
             return d > end && d <= futureEnd; // STRICTLY AFTER current period end
         });
 
-        // Group Future Items by Divisi for detailed view
+        // Group Future Items by Person (PIC) for Timeline View
+        const futureByPerson: Record<string, ActionPlan[]> = {};
+        futureItems.forEach(p => {
+            const pName = p.pic || "Unassigned";
+            if (!futureByPerson[pName]) futureByPerson[pName] = [];
+            futureByPerson[pName].push(p);
+        });
+
+        // Sort People by most future items
+        const sortedFuturePeople = Object.entries(futureByPerson)
+            .sort(([, a], [, b]) => b.length - a.length);
+
+        // LEGACY: Group Future Items by Divisi (Keep for safe measure or remove if unused)
         const futureByDivisi: Record<string, ActionPlan[]> = {};
         futureItems.forEach(p => {
             const dName = p.divisi || "General";
@@ -317,7 +329,8 @@ export default function ReportingPage() {
                     }
                     return acc;
                 }, [])
-            }
+            },
+            sortedFuturePeople
         };
 
     }, [isReportGenerated, plans, selectedDivisi, periodType, selectedYear, selectedMonth, selectedWeek, selectedQuarter, selectedSemester, dateRange]);
@@ -325,8 +338,16 @@ export default function ReportingPage() {
     // Helper for Avatar
     const getUserImage = (name: string) => {
         if (!users) return null;
-        const normalizedName = name.toLowerCase();
-        const user = users.find(u => u.name.toLowerCase() === normalizedName);
+        const normalizedName = name.trim().toLowerCase();
+
+        // Try strict match on name
+        let user = users.find(u => u.name.toLowerCase().trim() === normalizedName);
+
+        // Try match on first name if no full match
+        if (!user) {
+            user = users.find(u => u.name.toLowerCase().trim().split(' ')[0] === normalizedName.split(' ')[0]);
+        }
+
         return user?.image;
     };
 
@@ -790,57 +811,108 @@ export default function ReportingPage() {
 
                             <div className="break-inside-avoid-page"></div>
 
-                            {/* Section 4: Future Planning by Divisi */}
-                            <section className="mb-8">
-                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2 flex items-center gap-2">
+                            {/* Section 4: Future Planning by User Timeline */}
+                            <section className="mb-8 page-break-inside-avoid">
+                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-6 border-b border-slate-200 pb-2 flex items-center gap-2">
                                     <Briefcase className="w-4 h-4" />
                                     Rencana Kerja: {generatedReport.futurePeriodLabel}
                                 </h3>
 
-                                {Object.keys(generatedReport.futureByDivisi).length > 0 ? (
-                                    <div className="space-y-6">
-                                        {Object.entries(generatedReport.futureByDivisi).map(([divName, items], idx) => {
+                                {generatedReport.sortedFuturePeople.length > 0 ? (
+                                    <div className="space-y-8">
+                                        {generatedReport.sortedFuturePeople.map(([picName, items], idx) => {
+                                            const imageUrl = getUserImage(picName);
+
                                             // Group items by Week
                                             const weeklyGroups: Record<string, ActionPlan[]> = {};
                                             items.forEach(item => {
                                                 const d = item.endDate ? new Date(item.endDate) : null;
-                                                const weekKey = d ? `Minggu ${getWeek(d, { weekStartsOn: 1 }) - getWeek(new Date(d.getFullYear(), d.getMonth(), 1), { weekStartsOn: 1 }) + 1}` : "TBD";
-                                                if (!weeklyGroups[weekKey]) weeklyGroups[weekKey] = [];
-                                                weeklyGroups[weekKey].push(item);
+                                                const weekNum = d ? getWeek(d, { weekStartsOn: 1 }) : 0;
+                                                // Create a relative week label or absolute, usually Month Week X
+                                                // Let's use simplified "Minggu X" relative to start of period or absolute week number
+                                                const weekLabel = d ? `Minggu ${weekNum}` : "TBD";
+
+                                                if (!weeklyGroups[weekLabel]) weeklyGroups[weekLabel] = [];
+                                                weeklyGroups[weekLabel].push(item);
+                                            });
+
+                                            // Sort weeks slightly hacky but works for numbers
+                                            const sortedWeeks = Object.entries(weeklyGroups).sort((a, b) => {
+                                                const wa = parseInt(a[0].replace(/\D/g, '')) || 0;
+                                                const wb = parseInt(b[0].replace(/\D/g, '')) || 0;
+                                                return wa - wb;
                                             });
 
                                             return (
-                                                <div key={idx} className="bg-slate-50/50 p-4 rounded-lg border border-slate-100">
-                                                    <h4 className="text-xs font-bold text-indigo-800 uppercase mb-3 flex items-center gap-2">
-                                                        <Building2 className="w-3 h-3" />
-                                                        {divName}
-                                                    </h4>
-
-                                                    <div className="space-y-4">
-                                                        {Object.entries(weeklyGroups).sort().map(([week, weeklyItems], wIdx) => (
-                                                            <div key={wIdx} className="relative pl-4 border-l-2 border-slate-200">
-                                                                <div className="absolute -left-[5px] top-0 w-2.5 h-2.5 rounded-full bg-slate-300 border-2 border-white"></div>
-                                                                <h5 className="text-[10px] font-bold text-slate-500 uppercase mb-2">{week}</h5>
-                                                                <ul className="space-y-2">
-                                                                    {weeklyItems.map((item, i) => (
-                                                                        <li key={i} className="bg-white p-2 rounded shadow-sm border border-slate-100">
-                                                                            <div className="flex justify-between items-start">
-                                                                                <span className="font-medium text-xs text-slate-800 line-clamp-2">{item.lead}</span>
-                                                                                <span className="bg-slate-100 text-[9px] px-1.5 py-0.5 rounded text-slate-500 whitespace-nowrap">
-                                                                                    {item.endDate ? format(new Date(item.endDate), 'dd MMM') : '-'}
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-1.5 mt-1">
-                                                                                <div className="w-4 h-4 bg-indigo-100 rounded-full flex items-center justify-center text-[8px] font-bold text-indigo-600">
-                                                                                    {(item.pic || "U").substring(0, 1)}
-                                                                                </div>
-                                                                                <span className="text-[10px] text-slate-500">{item.pic || "Unassigned"}</span>
-                                                                            </div>
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
+                                                <div key={idx} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm break-inside-avoid">
+                                                    {/* User Header */}
+                                                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="relative">
+                                                                {imageUrl ? (
+                                                                    <img src={imageUrl} alt={picName} className="w-8 h-8 rounded-full object-cover border border-white shadow-sm" />
+                                                                ) : (
+                                                                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700 border border-white shadow-sm">
+                                                                        {picName.substring(0, 2).toUpperCase()}
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        ))}
+                                                            <div>
+                                                                <h4 className="text-sm font-bold text-slate-800">{picName}</h4>
+                                                                <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                                                                    <Building2 className="w-3 h-3" />
+                                                                    {items[0]?.divisi || "General"}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-[10px] font-medium bg-white px-2 py-1 rounded border border-slate-100 text-slate-500">
+                                                            {items.length} Rencana
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Timeline Body */}
+                                                    <div className="p-4 relative">
+                                                        {/* Vertical Line */}
+                                                        <div className="absolute left-[27px] top-4 bottom-4 w-0.5 bg-slate-100"></div>
+
+                                                        <div className="space-y-6">
+                                                            {sortedWeeks.map(([week, weeklyItems], wIdx) => (
+                                                                <div key={wIdx} className="relative pl-8">
+                                                                    {/* Week Dot */}
+                                                                    <div className="absolute left-[21px] top-1.5 w-3.5 h-3.5 rounded-full bg-white border-2 border-indigo-200 z-10"></div>
+
+                                                                    <h5 className="text-[11px] font-bold text-indigo-900 uppercase tracking-wide mb-3 flex items-center gap-2">
+                                                                        {week}
+                                                                        <span className="text-[9px] font-normal text-slate-400 normal-case bg-slate-50 px-1.5 py-0.5 rounded">
+                                                                            {weeklyItems.length} Aktivitas
+                                                                        </span>
+                                                                    </h5>
+
+                                                                    <div className="grid grid-cols-1 gap-2">
+                                                                        {weeklyItems.map((item, i) => (
+                                                                            <div key={i} className="bg-slate-50 p-2.5 rounded hover:bg-indigo-50/30 transition-colors border border-slate-100 text-xs">
+                                                                                <div className="font-semibold text-slate-800 mb-0.5 leading-snug">
+                                                                                    {item.lead}
+                                                                                </div>
+                                                                                <div className="flex justify-between items-center mt-1.5">
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <Calendar className="w-3 h-3 text-slate-400" />
+                                                                                        <span className="text-[10px] text-slate-500">
+                                                                                            {item.endDate ? format(new Date(item.endDate), 'dd MMM') : '-'}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    {item.targetNominal && Number(item.targetNominal) > 0 && (
+                                                                                        <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
+                                                                                            Rp {(Number(item.targetNominal) / 1000000).toFixed(1)}jt
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )
