@@ -27,7 +27,8 @@ import {
     KanbanSquare,
     LayoutDashboard,
     ClipboardCheck,
-    Layers
+    Layers,
+    FileText
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
@@ -130,6 +131,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         },
         { id: "assessment", icon: ClipboardCheck, label: "Assessment", href: "/assessment" },
         { id: "programs", icon: Layers, label: "Programs Hub", href: "/programs" },
+        { id: "reporting", icon: FileText, label: "Reporting", href: "/reporting" },
         {
             id: "canvassing",
             icon: Target, // Using Target icon temporarily, or maybe create a new one/find better match like 'Map' or 'Megaphone'
