@@ -191,9 +191,9 @@ export default function LoginPage() {
             {/* Right Side - Login Form */}
             <div className="w-full lg:w-[40%] bg-white flex flex-col justify-center p-8 lg:p-16 shadow-2xl z-50">
                 <div className="max-w-sm mx-auto w-full">
-                    <div className="mb-8">
-                        <div className="w-20 h-20 relative mb-4">
-                            <img src="/logo.png" alt="Company Logo" className="w-full h-full object-contain" />
+                    <div className="mb-8 text-center">
+                        <div className="w-full h-24 relative mb-4 flex justify-center">
+                            <img src="/logo-full.png" alt="DOMYADHU Logo" className="h-full object-contain" />
                         </div>
                         <h1 className="text-2xl font-bold text-gray-900">Sign In</h1>
                         <p className="text-gray-500 text-sm">Welcome back! Please enter your details.</p>
