@@ -40,6 +40,14 @@ export default function ActionPlanPage() {
 
     const [selectedIds, setSelectedIds] = React.useState<number[]>([])
 
+    // Status Reason Popup State
+    const [statusReasonPopup, setStatusReasonPopup] = React.useState<{
+        isOpen: boolean
+        planId: number | null
+        status: string
+        reason: string
+    }>({ isOpen: false, planId: null, status: '', reason: '' })
+
     // Pagination State
     const [currentPage, setCurrentPage] = React.useState(1)
     const [pageSize, setPageSize] = React.useState<number | 'all'>(50)
@@ -262,7 +270,31 @@ export default function ActionPlanPage() {
     })
 
     const handleUpdateStatus = (id: number, status: string) => {
-        updatePlanMutation.mutate({ id, data: { status: status } })
+        // If status is Cancel or Pending, show popup for reason
+        if (status === 'Cancel' || status === 'Pending') {
+            setStatusReasonPopup({
+                isOpen: true,
+                planId: id,
+                status: status,
+                reason: ''
+            })
+        } else {
+            // For other statuses, update directly
+            updatePlanMutation.mutate({ id, data: { status: status } })
+        }
+    }
+
+    const handleConfirmStatusChange = () => {
+        if (statusReasonPopup.planId && statusReasonPopup.reason.trim()) {
+            updatePlanMutation.mutate({
+                id: statusReasonPopup.planId,
+                data: {
+                    status: statusReasonPopup.status,
+                    keterangan: statusReasonPopup.reason
+                }
+            })
+            setStatusReasonPopup({ isOpen: false, planId: null, status: '', reason: '' })
+        }
     }
 
     const handleUpdateRealActivity = (id: number, value: string) => {
@@ -771,12 +803,50 @@ export default function ActionPlanPage() {
                 </div>
             </div>
 
+
             <UploadActionPlanModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
             <CreateActionPlanModal
                 isOpen={isCreateOpen}
                 onClose={() => setIsCreateOpen(false)}
                 initialData={editingPlan}
             />
+
+            {/* Status Reason Popup */}
+            {statusReasonPopup.isOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4 animate-in zoom-in-95">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            {statusReasonPopup.status === 'Cancel' ? '❌ Alasan Cancel' : '⏳ Alasan Pending'}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Mohon berikan alasan untuk status <span className="font-semibold">{statusReasonPopup.status}</span>
+                        </p>
+                        <textarea
+                            className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+                            rows={4}
+                            placeholder="Masukkan alasan..."
+                            value={statusReasonPopup.reason}
+                            onChange={(e) => setStatusReasonPopup(prev => ({ ...prev, reason: e.target.value }))}
+                            autoFocus
+                        />
+                        <div className="flex justify-end gap-2 mt-4">
+                            <button
+                                onClick={() => setStatusReasonPopup({ isOpen: false, planId: null, status: '', reason: '' })}
+                                className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleConfirmStatusChange}
+                                disabled={!statusReasonPopup.reason.trim()}
+                                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            >
+                                Simpan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
