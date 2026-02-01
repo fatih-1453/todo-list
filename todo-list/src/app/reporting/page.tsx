@@ -405,83 +405,68 @@ export default function ReportingPage() {
         const toastId = toast.loading("Sedang membuat PDF... Mohon tunggu");
 
         try {
-            // Import dynamically to avoid SSR issues if any, or just standard import usage
-            const { toPng } = await import('html-to-image');
-
-            // Create a clone to render full width/height without scrollbars
+            const htmlToImage = await import('html-to-image');
             const element = reportRef.current;
-            const clone = element.cloneNode(true) as HTMLElement;
 
-            // Style the clone to be fully expanded and fixed width
-            // Placing it deep off-screen vertically can cause issues in some rendering engines.
-            // Using a container to "mask" it might be better, or just placing it at top:0 left:-9999px
-            clone.style.width = '1200px';
-            clone.style.height = 'auto';
-            clone.style.overflow = 'visible';
-            clone.style.position = 'fixed'; // Fixed ensures it's relative to viewport but we move it out
-            clone.style.top = '0';
-            clone.style.left = '-10000px'; // Move out of view horizontally
-            clone.style.backgroundColor = '#ffffff';
-            clone.style.zIndex = '-1000'; // Behind everything
+            // Store original styles to restore later
+            const originalOverflow = element.style.overflow;
+            const originalWidth = element.style.width;
 
-            // Specific fix for Gantt Scroll
-            const ganttScrollContainer = clone.querySelectorAll('.overflow-x-auto');
-            ganttScrollContainer.forEach((el: any) => {
+            // Temporarily expand scrollable areas for capture
+            element.style.overflow = 'visible';
+
+            // Expand all overflow-x-auto containers
+            const scrollContainers = element.querySelectorAll('.overflow-x-auto');
+            const originalContainerStyles: { el: HTMLElement; overflow: string; width: string }[] = [];
+            scrollContainers.forEach((el: any) => {
+                originalContainerStyles.push({
+                    el,
+                    overflow: el.style.overflow,
+                    width: el.style.width
+                });
                 el.style.overflow = 'visible';
-                el.style.width = '100%';
-                el.style.display = 'block'; // Force block
+                el.style.width = 'auto';
             });
 
-            // FIX: Recharts width logic
-            const charts = clone.querySelectorAll('.recharts-responsive-container');
-            charts.forEach((chart: any) => {
-                chart.style.width = '1000px';
-                chart.style.height = '300px';
-                chart.style.position = 'relative';
-                // Force visibility
-                chart.style.display = 'block';
-                chart.style.visibility = 'visible';
-            });
+            // Wait for any reflows
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-            document.body.appendChild(clone);
-
-            // Short delay for fonts/charts
-            // Increase slightly to be safe
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            const dataUrl = await toPng(clone, {
+            // Use toCanvas for better compatibility
+            const canvas = await htmlToImage.toCanvas(element, {
                 cacheBust: true,
                 backgroundColor: '#ffffff',
-                width: 1200,
-                // Ensure proper styling context
-                style: {
-                    fontFamily: 'Inter, sans-serif',
-                    transform: 'none', // reset any potential transforms
-                },
-                pixelRatio: 2 // Improve quality
+                pixelRatio: 2,
+                skipFonts: true, // Skip font embedding which can cause issues
             });
 
-            document.body.removeChild(clone);
+            // Restore original styles
+            element.style.overflow = originalOverflow;
+            element.style.width = originalWidth;
+            originalContainerStyles.forEach(({ el, overflow, width }) => {
+                el.style.overflow = overflow;
+                el.style.width = width;
+            });
 
+            const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
 
-            const imgProps = pdf.getImageProperties(dataUrl);
-            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            const imgWidth = pdfWidth;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
             let heightLeft = imgHeight;
             let position = 0;
 
             // First page
-            pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
             heightLeft -= pdfHeight;
 
             // Subsequent pages
             while (heightLeft > 0) {
                 position = heightLeft - imgHeight;
                 pdf.addPage();
-                pdf.addImage(dataUrl, 'PNG', 0, position, pdfWidth, imgHeight);
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                 heightLeft -= pdfHeight;
             }
 
