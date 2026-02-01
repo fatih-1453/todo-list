@@ -34,8 +34,8 @@ export default function ActionPlanPage() {
 
 
     // Date Filter State
-    const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString())
-    const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString())
+    const [selectedYear, setSelectedYear] = React.useState<string>("all")
+    const [selectedMonth, setSelectedMonth] = React.useState<string>("all")
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>()
 
     const [selectedIds, setSelectedIds] = React.useState<number[]>([])
