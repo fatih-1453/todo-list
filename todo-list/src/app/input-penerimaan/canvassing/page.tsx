@@ -2,20 +2,42 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Calendar, ChevronDown, Edit2, FileText, Info } from 'lucide-react';
+import { ChevronDown, Edit2, FileText, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { apiClient } from '@/lib/api-client';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export default function CanvasingInputPage() {
-    const { register, handleSubmit, watch, formState: { errors } } = useForm();
+    const { register, handleSubmit, formState: { errors } } = useForm();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const router = useRouter();
 
     // Mock Data based on screenshot
     const transactionNumber = "M111002-260008";
-    const currentDate = "01/02/2026";
+    const currentDate = format(new Date(), 'yyyy-MM-dd');
 
     // Form Submit Handler
-    const onSubmit = (data: any) => {
-        console.log("Form Data:", data);
-        alert("Data submitted! (Check console for details)");
+    const onSubmit = async (data: any) => {
+        setIsSubmitting(true);
+        try {
+            // Transform data as needed
+            const payload = {
+                ...data,
+                transactionNumber, // Currently mock, backend could generate
+                date: new Date(),
+                amount: data.amount ? data.amount.replace(/[^0-9]/g, '') : '0' // Clean currency string
+            };
+
+            await apiClient.post('/transactions', payload);
+            toast.success("Transaction saved successfully!");
+            router.push('/canvassing/dashboard'); // Redirect or reset
+        } catch (error) {
+            console.error("Submission error:", error);
+            toast.error("Failed to save transaction.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -48,108 +70,6 @@ export default function CanvasingInputPage() {
                         <h2 className="text-lg font-bold text-gray-800">Jenis Transaksi</h2>
                     </div>
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-                            {/* Cara Donasi */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-500">Cara Donasi</label>
-                                <div className="relative">
-                                    <select
-                                        {...register('donationMethod')}
-                                        className="w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-700 font-medium"
-                                    >
-                                        <option value="Transfer">Transfer</option>
-                                        <option value="Tunai">Tunai</option>
-                                        <option value="QRIS">QRIS</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                                </div>
-                            </div>
-
-                            {/* Cara Penghimpunan */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-500">Cara Penghimpunan</label>
-                                <div className="relative">
-                                    <select
-                                        {...register('collectionMethod')}
-                                        className="w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-700 font-medium"
-                                    >
-                                        <option value="Komunitas">Komunitas</option>
-                                        <option value="Individu">Individu</option>
-                                        <option value="Perusahaan">Perusahaan</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                                </div>
-                            </div>
-
-                            {/* Nomor Transaksi (Read Only) */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-500">Nomor Transaksi</label>
-                                <div className="w-full h-12 px-4 bg-gray-100 border border-gray-200 rounded-xl flex items-center text-gray-500 font-medium">
-                                    {transactionNumber}
-                                </div>
-                            </div>
-
-                            {/* Tanggal (Read Only for now or DatePicker) */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-500">Tanggal</label>
-                                <div className="w-full h-12 px-4 bg-gray-100 border border-gray-200 rounded-xl flex items-center text-gray-500 font-medium relative">
-                                    {currentDate}
-                                    {/* <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} /> */}
-                                </div>
-                            </div>
-
-                            {/* Akad */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-500">Akad</label>
-                                <div className="relative">
-                                    <select
-                                        {...register('contract')}
-                                        className="w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-700 font-medium"
-                                    >
-                                        <option value="Penerimaan Insho Umum">Penerimaan Insho Umum</option>
-                                        <option value="Zakat">Zakat</option>
-                                        <option value="Wakaf">Wakaf</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                                </div>
-                            </div>
-
-                            {/* Nominal (Moved to right column to match layout slightly better if needed, but following row flow from screenshot) */}
-                            {/* Actually in screenshot: Cara Donasi | Cara Penghimpunan | Nominal (is 3rd col?) NO, screenshot is 2 cols roughly but Nominal is solitary on far right in first row? 
-                                Let's look closely at screenshot.
-                                Row 1: Cara Donasi | Cara Penghimpunan | [Blank/Nominal?] -> Wait, Nominal is to the right of Cara Penghimpunan. It looks like a 3-column layout or mixed.
-                                Screenshot:
-                                Col 1: Cara Donasi
-                                Col 2: Cara Penghimpunan
-                                Col 3: Nominal (Rp 100.000)
-                                
-                                Row 2: Nomor Transaksi | Tanggal
-                                Row 3: Akad | Jenis Akad
-                                Row 4: Program | Jenis Program
-                                
-                                Ah, okay. Let's adjust grid to 3 columns for top row, or use a custom grid.
-                                The rest look like 2 columns.
-                                Let's try to match exactly.
-                            */}
-
-                            {/* Nominal - Floating or 3rd column? Let's make it 2-col grid but span somewhat? 
-                                Actually, let's just stick to 2-col logic or 3-col logic.
-                                Screenshot clearly shows Nominal as 3rd item in first row.
-                            */}
-                        </div>
-
-                        {/* Custom Grid for Row 1 */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 -mt-2">
-                            {/* Nominal (Placing it here to match flow if we use absolute positioning or just grid)
-                                 Wait, the previous grid closed. 
-                                 Let's restructure the form to use a flexible grid layout to match screenshot perfectly.
-                             */}
-                        </div>
-                    </form>
-
-                    {/* Re-writing form content with better layout matching */}
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-6">
 
                         {/* Row 1: Donasi, Penghimpunan, Nominal */}
@@ -253,8 +173,10 @@ export default function CanvasingInputPage() {
                 <div className="flex justify-end mt-6">
                     <button
                         onClick={handleSubmit(onSubmit)}
-                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all"
+                        disabled={isSubmitting}
+                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all flex items-center gap-2"
                     >
+                        {isSubmitting && <Loader2 className="animate-spin" size={20} />}
                         Lanjut
                     </button>
                 </div>

@@ -17,6 +17,8 @@ import programRoutes from './program.routes';
 import canvassingRoutes from './canvassing.routes';
 import roadmapRoutes from './roadmap.routes';
 
+import transactionRoutes from './transaction.routes';
+
 const router = Router();
 
 // API Routes
@@ -37,5 +39,6 @@ router.use('/assessments', assessmentRoutes);
 router.use('/programs', programRoutes);
 router.use('/canvassing', canvassingRoutes);
 router.use('/roadmap', roadmapRoutes);
+router.use('/transactions', transactionRoutes);
 
 export default router;
