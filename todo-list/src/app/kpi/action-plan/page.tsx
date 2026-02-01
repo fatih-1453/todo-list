@@ -54,14 +54,24 @@ export default function ActionPlanPage() {
 
     // Sync Dropdowns to DateRange
     React.useEffect(() => {
-        if (selectedYear && selectedMonth && selectedYear !== 'all' && selectedMonth !== 'all') {
+        if (selectedYear !== 'all') {
             const year = parseInt(selectedYear)
-            const month = parseInt(selectedMonth) - 1
-            setDateRange({
-                from: startOfMonth(new Date(year, month)),
-                to: endOfMonth(new Date(year, month)),
-            })
-        } else if (selectedYear === 'all' || selectedMonth === 'all') {
+            if (selectedMonth !== 'all') {
+                // Specific Month
+                const month = parseInt(selectedMonth) - 1
+                setDateRange({
+                    from: startOfMonth(new Date(year, month)),
+                    to: endOfMonth(new Date(year, month)),
+                })
+            } else {
+                // Whole Year
+                setDateRange({
+                    from: new Date(year, 0, 1),
+                    to: new Date(year, 11, 31, 23, 59, 59),
+                })
+            }
+        } else {
+            // All Years - No Filter
             setDateRange(undefined)
         }
         setCurrentPage(1) // Reset page on filter change
