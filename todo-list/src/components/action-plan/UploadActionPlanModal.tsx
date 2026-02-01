@@ -18,6 +18,7 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
     const [previewData, setPreviewData] = React.useState<any[]>([])
     const [error, setError] = React.useState<string | null>(null)
     const [isSuccess, setIsSuccess] = React.useState(false)
+    const [uploadStats, setUploadStats] = React.useState<{ total: number, uploaded: number, skipped: number } | null>(null)
 
     // Reset state on close
     React.useEffect(() => {
@@ -26,6 +27,7 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
             setPreviewData([])
             setError(null)
             setIsSuccess(false)
+            setUploadStats(null)
         }
     }, [isOpen])
 
@@ -100,6 +102,8 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
         }
     }
 
+
+
     const uploadMutation = useMutation({
         mutationFn: async () => {
             const data = await file!.arrayBuffer()
@@ -156,7 +160,7 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
 
             const map = {
                 pic: getIdx(['nama', 'pic', 'person']),
-                lead: getIdx(['plan', 'lead', 'activity', 'kegiatan']), // Changed plan to lead
+                lead: getIdx(['plan', 'lead', 'activity', 'kegiatan']),
                 program: getIdx(['program']),
                 output: getIdx(['output']),
                 keterangan: getIdx(['keterangan', 'catatan', 'notes']),
@@ -169,11 +173,11 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                 goal: getIdx(['tujuan', 'goal']),
                 position: getIdx(['jabatan', 'position']),
                 subdivisi: getIdx(['subdivisi', 'subdivision']),
-                divisi: getIdx(['divisi', 'division']), // Changed div to divisi
+                divisi: getIdx(['divisi', 'division']),
                 executingAgency: getIdx(['biro', 'pelaksana', 'agency']),
                 classification: getIdx(['klasifikasi', 'class']),
                 realActivity: getIdx(['realisasi kegiatan', 'real activity']),
-                status: getIdx(['status', 'real week']) // Changed realWeek1 to status
+                status: getIdx(['status', 'real week'])
             };
 
             // Helper to get cell value
@@ -206,22 +210,28 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                 };
             };
 
+            const rawData = jsonData.slice(dataStartIndex);
+            const processedData = rawData.map(processRow);
+            const payload = processedData.filter(item => item && item.lead !== 'No Plan' && item.lead !== '');
 
-            const payload = jsonData.slice(1) // Data starts at index 1 (after header at 0)
-                .map(processRow)
-                .filter(item => item && item.lead !== 'No Plan' && item.lead !== '');
+            const stats = {
+                total: rawData.length,
+                uploaded: payload.length,
+                skipped: rawData.length - payload.length
+            };
 
-            return apiClient.post('/action-plans/bulk', payload)
+            await apiClient.post('/action-plans/bulk', payload)
+            return stats;
         },
-        onSuccess: () => {
+        onSuccess: (stats) => {
             queryClient.invalidateQueries({ queryKey: ['actionPlans'] })
-            toast.success("Action plans imported successfully")
-            setTimeout(() => {
-                onClose()
-            }, 1500)
+            setUploadStats(stats)
+            setIsSuccess(true)
+            toast.success("Action plans processed")
         },
         onError: (err) => {
-            setError("Failed to upload. Please try again.")
+            console.error(err)
+            setError("Failed to upload. " + (err instanceof Error ? err.message : "Please check your file."))
         }
     })
 
@@ -309,7 +319,32 @@ export function UploadActionPlanModal({ isOpen, onClose }: UploadActionPlanModal
                                 <CheckCircle className="w-8 h-8" />
                             </div>
                             <h3 className="font-bold text-xl text-gray-900">Import Successful!</h3>
-                            <p className="text-gray-500 mt-1">Your action plans have been added.</p>
+
+                            {uploadStats ? (
+                                <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-100 w-full max-w-sm">
+                                    <div className="grid grid-cols-3 gap-4 text-center">
+                                        <div>
+                                            <p className="text-xs text-gray-500 font-medium uppercase">Total Rows</p>
+                                            <p className="text-lg font-bold text-gray-900">{uploadStats.total}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-green-600 font-medium uppercase">Success</p>
+                                            <p className="text-lg font-bold text-green-600">{uploadStats.uploaded}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-orange-500 font-medium uppercase">Skipped</p>
+                                            <p className="text-lg font-bold text-orange-500">{uploadStats.skipped}</p>
+                                        </div>
+                                    </div>
+                                    {uploadStats.skipped > 0 && (
+                                        <p className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-200">
+                                            {uploadStats.skipped} rows were skipped because they had missing 'Plan' or empty data.
+                                        </p>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 mt-1">Your action plans have been added.</p>
+                            )}
                         </div>
                     )}
 
