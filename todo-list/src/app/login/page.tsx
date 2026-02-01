@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
 import { apiClient } from "@/lib/api-client"
 import { Loader2, Mail, Lock, CheckCircle2, Circle, Sparkles } from "lucide-react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 
 type RoadmapItem = {
     id: number
@@ -27,6 +27,7 @@ export default function LoginPage() {
 
     const [roadmapItems, setRoadmapItems] = useState<RoadmapItem[]>([])
     const [loadingRoadmap, setLoadingRoadmap] = useState(true)
+    const [hoveredItemId, setHoveredItemId] = useState<number | null>(null)
 
     useEffect(() => {
         const fetchRoadmap = async () => {
@@ -94,6 +95,8 @@ export default function LoginPage() {
                             <div className="flex flex-col flex-1 justify-evenly h-full w-full">
                                 {roadmapItems.map((item, index) => {
                                     const isEven = index % 2 === 0;
+                                    const isHovered = hoveredItemId === item.id;
+
                                     return (
                                         <motion.div
                                             key={item.id}
@@ -101,6 +104,7 @@ export default function LoginPage() {
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: index * 0.1, duration: 0.4 }}
                                             className={`flex flex-col lg:flex-row items-center w-full ${isEven ? 'lg:flex-row-reverse' : ''}`}
+                                            style={{ minHeight: '60px' }} // Ensure some base height for spacing
                                         >
                                             {/* Side Spacer */}
                                             <div className="w-full lg:w-1/2" />
@@ -119,35 +123,58 @@ export default function LoginPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Card Content - Compact */}
-                                            <div className={`w-full lg:w-1/2 flex ${isEven ? 'lg:justify-end pr-0 lg:pr-6' : 'lg:justify-start pl-0 lg:pl-6'}`}>
+                                            {/* Card Container - Relative for layout, absolute items inside */}
+                                            <div
+                                                className={`w-full lg:w-1/2 flex relative ${isEven ? 'lg:justify-end pr-0 lg:pr-6' : 'lg:justify-start pl-0 lg:pl-6'}`}
+                                                onMouseEnter={() => setHoveredItemId(item.id)}
+                                                onMouseLeave={() => setHoveredItemId(null)}
+                                            >
+                                                {/* Placeholder (Always renders to hold space) */}
                                                 <div className={`
-                                                    relative p-3 lg:p-4 bg-white rounded-xl shadow-sm border border-gray-100 w-full max-w-sm group hover:shadow-md transition-all
-                                                    ${item.status === 'in-progress' ? 'ring-1 ring-orange-500/20 bg-orange-50/5' : ''}
+                                                    relative p-3 lg:p-4 bg-white rounded-xl shadow-sm border border-gray-100 w-full max-w-sm
+                                                    ${isHovered ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200
                                                 `}>
-                                                    {/* Arrow Pointer */}
-                                                    <div className={`
-                                                        absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white border-t border-r border-gray-100 rotate-45 hidden lg:block
-                                                        ${isEven ? '-right-[6px] border-l-0 border-b-0' : '-left-[6px] border-t-0 border-r-0 border-b border-l'}
-                                                    `}></div>
-
                                                     <div className="flex justify-between items-center mb-1">
-                                                        <span className={`
-                                                            px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider
-                                                            ${item.status === 'completed' ? 'bg-green-50 text-green-700' :
-                                                                item.status === 'in-progress' ? 'bg-orange-50 text-orange-700' :
-                                                                    'bg-gray-100 text-gray-500'}
-                                                        `}>
+                                                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${item.status === 'completed' ? 'bg-green-50 text-green-700' : item.status === 'in-progress' ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>
                                                             {item.quarter}
                                                         </span>
                                                     </div>
-                                                    <h3 className="text-sm lg:text-base font-bold text-gray-900 leading-tight group-hover:text-orange-600 transition-colors truncate">
-                                                        {item.title}
-                                                    </h3>
-                                                    <p className="text-xs text-gray-500 leading-tight mt-1 line-clamp-2">
-                                                        {item.description}
-                                                    </p>
+                                                    <h3 className="text-sm lg:text-base font-bold text-gray-900 leading-tight truncate">{item.title}</h3>
+                                                    <p className="text-xs text-gray-500 leading-tight mt-1 line-clamp-2">{item.description}</p>
                                                 </div>
+
+                                                {/* Expanded Hover Card (Absolute overlay) */}
+                                                <AnimatePresence>
+                                                    {isHovered && (
+                                                        <motion.div
+                                                            layoutId={`card-${item.id}`}
+                                                            className={`
+                                                                absolute top-0 z-50 p-5 bg-white rounded-xl shadow-xl border border-orange-100 w-full min-w-[320px] max-w-lg
+                                                                ${isEven ? 'right-0 lg:right-6 origin-right' : 'left-0 lg:left-6 origin-left'}
+                                                            `}
+                                                            initial={{ opacity: 0, scale: 0.95 }}
+                                                            animate={{ opacity: 1, scale: 1, width: '140%', maxWidth: '500px' }}
+                                                            exit={{ opacity: 0, scale: 0.95 }}
+                                                            transition={{ duration: 0.2 }}
+                                                        >
+                                                            <div className="flex justify-between items-center mb-2">
+                                                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${item.status === 'completed' ? 'bg-green-50 text-green-700' : item.status === 'in-progress' ? 'bg-orange-50 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                                    {item.quarter}
+                                                                </span>
+                                                                {/* Status Badge */}
+                                                                <span className="text-[10px] text-gray-400 font-medium capitalize flex items-center gap-1">
+                                                                    {item.status.replace('-', ' ')}
+                                                                </span>
+                                                            </div>
+                                                            <h3 className="text-base lg:text-lg font-bold text-gray-900 leading-tight mb-2 text-orange-600">
+                                                                {item.title}
+                                                            </h3>
+                                                            <p className="text-sm text-gray-600 leading-relaxed">
+                                                                {item.description}
+                                                            </p>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         </motion.div>
                                     )
