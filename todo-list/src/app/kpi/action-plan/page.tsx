@@ -212,9 +212,9 @@ export default function ActionPlanPage() {
 
     const handleDownloadTemplate = () => {
         const headers = [
-            "Nama", "Lead", "Program", "Catatan", "Indikator", "Lokasi",
+            "Nama", "Lead", "Output", "Program", "Indikator", "Lokasi",
             "Start Date (YYYY-MM-DD)", "End Date (YYYY-MM-DD)", "Target Kegiatan", "Realisasi Kegiatan", "Status",
-            "Target Penerima", "Tujuan", "Jabatan", "Subdivisi", "Divisi",
+            "Keterangan", "Target Penerima", "Tujuan", "Jabatan", "Subdivisi", "Divisi",
             "Div Pelaksana", "Klasifikasi"
         ]
         const ws = XLSX.utils.aoa_to_sheet([headers])
@@ -521,6 +521,9 @@ export default function ActionPlanPage() {
                             </button>
                         ) : (
                             <div className="flex items-center gap-2">
+                                <button onClick={handleDownloadTemplate} className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Download Template">
+                                    <FileSpreadsheet className="w-5 h-5" />
+                                </button>
                                 <button onClick={handleDownloadData} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Export Excel">
                                     <Download className="w-5 h-5" />
                                 </button>
