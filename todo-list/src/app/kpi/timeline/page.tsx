@@ -206,7 +206,7 @@ export default function TimelinePage() {
                     return {
                         start,
                         end,
-                        name: p.lead,
+                        name: p.output || "-",
                         id: String(p.id),
                         type: "task",
                         progress: progress,
@@ -538,7 +538,7 @@ export default function TimelinePage() {
                                                         >
                                                             {/* Hierarchical Column */}
                                                             <div
-                                                                className="flex-1 px-4 h-full flex items-center min-w-[200px] overflow-hidden truncate"
+                                                                className="flex-1 px-4 h-full flex items-center min-w-[200px] overflow-hidden"
                                                             >
                                                                 {/* Level 1: Division */}
                                                                 {level === 'division' && (
@@ -569,7 +569,7 @@ export default function TimelinePage() {
                                                                 {level === 'plan' && (
                                                                     <div className="flex items-center w-full pl-16">
                                                                         <FileText className="w-4 h-4 mr-3 text-gray-300 flex-shrink-0" />
-                                                                        <span className="text-sm text-gray-500 group-hover/row:text-gray-900 transition-colors truncate">{t.name}</span>
+                                                                        <span className="text-sm text-gray-500 group-hover/row:text-gray-900 transition-colors whitespace-normal break-words line-clamp-2 leading-tight">{t.name}</span>
                                                                     </div>
                                                                 )}
                                                             </div>
