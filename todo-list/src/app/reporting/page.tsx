@@ -9,7 +9,8 @@ import {
     Loader2, FileText, Search, Filter, Calendar, TrendingUp,
     AlertTriangle, CheckCircle, Target, Wallet, ArrowRight,
     Building2, Printer, Download, UserCircle, Briefcase, Trophy,
-    Folder, FolderOpen, ChevronRight, ChevronDown, Clock, Pencil, X, Save
+    Folder, FolderOpen, ChevronRight, ChevronDown, Clock, Pencil, X, Save,
+    Zap, Lightbulb, LineChart
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -58,6 +59,14 @@ interface PersonPerformance {
     completed: number;
     pending: number;
     score: number;
+}
+
+interface SmartInsight {
+    type: 'anomaly' | 'trend' | 'recommendation';
+    title: string;
+    description: string;
+    icon: any;
+    color: string;
 }
 
 interface AnalysisPoints {
@@ -392,12 +401,64 @@ export default function ReportingPage() {
         const sortedPendingPeople = Object.entries(pendingByPerson)
             .sort(([, a], [, b]) => b.length - a.length); // Sort by most pending items
 
+        // --- SMART INSIGHTS GENERATION ---
+        const smartInsights: SmartInsight[] = [];
+
+        // 1. Anomaly Detection: Low budget realization despite high completion?
+        if (totalBudget > 0 && totalRealization === 0 && completionRate > 50) {
+            smartInsights.push({
+                type: 'anomaly',
+                title: 'Anomali Anggaran',
+                description: `Tingkat penyelesaian tinggi (${completionRate}%) namun realisasi anggaran masih Rp 0. Pastikan data keuangan telah diinput.`,
+                icon: AlertTriangle,
+                color: 'text-red-500 bg-red-50 border-red-200'
+            });
+        }
+
+        // 2. Trend Prediction: completion rate forecast
+        // Simple logic: if 50% done in half the period, we are on track.
+        // Let's us completion rate vs time elapsed.
+        const today = new Date();
+        const totalDays = differenceInCalendarDays(end, start) + 1;
+        const daysElapsed = differenceInCalendarDays(today, start) + 1;
+        const timeProgress = Math.min(Math.max(daysElapsed / totalDays, 0), 1) * 100;
+
+        if (completionRate < timeProgress - 15) { // 15% lag
+            smartInsights.push({
+                type: 'trend',
+                title: 'Risiko Keterlambatan',
+                description: `Progress saat ini (${completionRate}%) tertinggal secara signifikan dari durasi waktu berjalan (${Math.round(timeProgress)}%). Diperlukan akselerasi sebesar 2x lipat.`,
+                icon: TrendingUp,
+                color: 'text-orange-500 bg-orange-50 border-orange-200'
+            });
+        } else if (completionRate > timeProgress + 10) {
+            smartInsights.push({
+                type: 'trend',
+                title: 'Sangat Efisien',
+                description: `Kinerja tim melampaui ekspektasi waktu. Proyeksi penyelesaian lebih cepat ${Math.round(completionRate - timeProgress)}% dari jadwal.`,
+                icon: Zap,
+                color: 'text-green-500 bg-green-50 border-green-200'
+            });
+        }
+
+        // 3. Recommendation
+        if (sortedPendingPeople.length > 0) {
+            smartInsights.push({
+                type: 'recommendation',
+                title: 'Fokus Mingguan',
+                description: `Prioritaskan support untuk ${sortedPendingPeople[0][0]} yang memiliki ${sortedPendingPeople[0][1].length} job pending terbanyak.`,
+                icon: Lightbulb,
+                color: 'text-blue-500 bg-blue-50 border-blue-200'
+            });
+        }
+
         return {
             periodLabel: format(start, "dd MMM yyyy") + " - " + format(end, "dd MMM yyyy"),
             futurePeriodLabel: format(futureStart, "dd MMM") + " - " + format(futureEnd, "dd MMM yyyy"),
             total, completed, pending, completionRate,
             totalBudget, totalRealization,
             analysisPoints,
+            smartInsights, // Add this
             evaluationItems, futureItems, futureByDivisi,
             statusData,
             sortedDivisions, sortedPeople, sortedPendingPeople,
@@ -790,6 +851,25 @@ export default function ReportingPage() {
                         id="report-view"
                         className="space-y-6"
                     >
+                        {/* SMART INSIGHTS SECTION */}
+                        {generatedReport.smartInsights.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {generatedReport.smartInsights.map((insight, idx) => (
+                                    <div key={idx} className={`p-4 rounded-lg border flex items-start gap-4 shadow-sm ${insight.color}`}>
+                                        <div className={`p-2 rounded-full bg-white/50`}>
+                                            <insight.icon className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-sm uppercase tracking-wider mb-1 opacity-90">{insight.title}</h4>
+                                            <p className="text-xs leading-relaxed opacity-80 font-medium">
+                                                {insight.description}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         <div className="flex justify-end">
                             <Button variant="outline" onClick={handleDownloadPDF} className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50">
                                 <Download className="w-4 h-4" />
