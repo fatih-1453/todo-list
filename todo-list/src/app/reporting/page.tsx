@@ -21,9 +21,8 @@ import {
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import {
-    format, startOfWeek, endOfWeek, endOfMonth, endOfQuarter, endOfYear,
     addWeeks, addMonths, isWithinInterval, getWeek, eachDayOfInterval,
-    differenceInCalendarDays, addDays, isSameDay
+    differenceInCalendarDays, addDays, isSameDay, subMonths
 } from "date-fns"
 import { id } from "date-fns/locale"
 import {
@@ -279,20 +278,55 @@ export default function ReportingPage() {
             futureByDivisi[dName].push(p);
         });
 
-        // AI Analysis Simulation
+        // AI Analysis Simulation - DETAILED 5 POINTS
         const topDiv = sortedDivisions.length > 0 ? sortedDivisions[0] : null;
         const lowDiv = sortedDivisions.length > 0 ? sortedDivisions[sortedDivisions.length - 1] : null;
 
-        const analysisText = `Berdasarkan evaluasi komprehensif periode ini, organisasi mencapai tingkat efektivitas ${completionRate}%. ` +
-            (topDiv ? `Apresiasi diberikan kepada Divisi ${topDiv.name} yang memimpin dengan skor kinerja ${topDiv.score}%. ` : "") +
-            (lowDiv && lowDiv.score < 50 ? `Perhatian khusus diperlukan untuk Divisi ${lowDiv.name} yang baru mencapai ${lowDiv.score}%, terindikasi adanya hambatan eksekusi. ` : "") +
-            `Secara finansial, realisasi anggaran adalah ${totalBudget > 0 ? Math.round((totalRealization / totalBudget) * 100) : 0}% dari target.`;
+        // 1. Ketercapaian vs Target
+        const achievementText = `Secara operasional, tingkat penyelesaian rencana aksi mencapai ${completionRate}% (${completed} dari ${total} rencana). ` +
+            `Secara finansial, realisasi anggaran sebesar ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalRealization)} ` +
+            `dari target ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(totalBudget)} ` +
+            `(${totalBudget > 0 ? Math.round((totalRealization / totalBudget) * 100) : 0}%).`;
 
-        const mitigationText = pending > 0
-            ? `Terdapat ${pending} rencana aksi yang meleset dari target waktu (Overdue). ` +
-            `Disarankan segera melakukan Root Cause Analysis (RCA) pada level divisi, khususnya divisi dengan backlog tertinggi. ` +
-            `Prioritaskan realokasi sumber daya manusia (PIC) yang memiliki beban kerja rendah untuk membantu penyelesaian inisiatif kritis.`
-            : `Kinerja operasional berjalan optimal tanpa backlog signifikan. Fokus periode mendatang harus diarahkan pada peningkatan kualitas output dan inovasi strategis.`;
+        // 2. Evaluasi Divisi
+        const divEvalText = sortedDivisions.length > 0
+            ? `Divisi dengan kinerja tertinggi adalah **${topDiv?.name}** (Skor: ${topDiv?.score}%, Selesai: ${topDiv?.completed}/${topDiv?.total}). ` +
+            (lowDiv && lowDiv !== topDiv ? `Divisi **${lowDiv.name}** perlu perhatian khusus (Skor: ${lowDiv.score}%, Pending: ${lowDiv.pending}).` : "")
+            : "Belum ada data evaluasi divisi yang cukup.";
+
+        // 3. Evaluasi Individu (Top PIC)
+        const topPICs = sortedPeople.slice(0, 3).map(p => `${p.name} (${p.score}%)`).join(", ");
+        const picEvalText = sortedPeople.length > 0
+            ? `Apresiasi setinggi-tingginya diberikan kepada Top PIC dengan penyelesaian terbaik: ${topPICs}.`
+            : "Belum ada data evaluasi individu.";
+
+        // 4. Evaluasi Pending & Hambatan
+        const overdueCount = evaluationItems.filter(p => {
+            const d = parseDate(p.endDate);
+            return d && d < new Date();
+        }).length;
+
+        const pendingEvalText = pending > 0
+            ? `Terdapat total ${pending} rencana aksi yang masih dalam status pending/on-progress. ` +
+            (overdueCount > 0 ? `Sebanyak ${overdueCount} di antaranya telah melewati batas waktu (Overdue) dan berpotensi menjadi hambatan pencapaian target. ` : "") +
+            `Disarankan untuk melakukan review mingguan yang lebih intensif pada item-item pending tersebut.`
+            : "Tidak ada hambatan signifikan, seluruh rencana aksi berjalan sesuai jadwal.";
+
+        // 5. Rencana Kerja
+        const upcomingCount = futureItems.length;
+        const workPlanText = upcomingCount > 0
+            ? `Untuk periode mendatang, terdapat ${upcomingCount} rencana kerja baru yang telah dijadwalkan. ` +
+            `Fokus utama dialokasikan pada eksekusi program-program strategis dan pemantauan ketat terhadap realisasi anggaran awal.`
+            : "Belum ada rencana kerja signifikan yang tercatat untuk periode mendatang.";
+
+        const analysisPoints = {
+            achievement: achievementText,
+            division: divEvalText,
+            individual: picEvalText,
+            pending: pendingEvalText,
+            workPlan: workPlanText
+        };
+
 
         // E. Gantt Chart Data Prep
         const ganttDays = eachDayOfInterval({ start: futureStart, end: futureEnd });
@@ -348,7 +382,8 @@ export default function ReportingPage() {
             futurePeriodLabel: format(futureStart, "dd MMM") + " - " + format(futureEnd, "dd MMM yyyy"),
             total, completed, pending, completionRate,
             totalBudget, totalRealization,
-            analysisText, mitigationText,
+            analysisPoints, mitigationText, // Used analysisPoints object instead
+
             evaluationItems, futureItems, futureByDivisi,
             statusData,
             sortedDivisions, sortedPeople, sortedPendingPeople,
@@ -742,9 +777,30 @@ export default function ReportingPage() {
                                         <TrendingUp className="w-4 h-4" />
                                         Evaluasi Kinerja Makro
                                     </h2>
-                                    <p className="text-slate-700 leading-relaxed text-justify text-xs font-sans">
-                                        {generatedReport.analysisText}
-                                    </p>
+                                    <div className="text-slate-700 leading-relaxed text-justify text-xs font-sans">
+                                        <ul className="space-y-3 mt-2">
+                                            <li className="flex gap-2 text-justify">
+                                                <span className="font-bold text-indigo-700 min-w-[140px]">1. Ketercapaian:</span>
+                                                <span>{generatedReport.analysisPoints.achievement}</span>
+                                            </li>
+                                            <li className="flex gap-2 text-justify">
+                                                <span className="font-bold text-indigo-700 min-w-[140px]">2. Evaluasi Divisi:</span>
+                                                <span>{generatedReport.analysisPoints.division.split('**').map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part)}</span>
+                                            </li>
+                                            <li className="flex gap-2 text-justify">
+                                                <span className="font-bold text-indigo-700 min-w-[140px]">3. Evaluasi Individu:</span>
+                                                <span>{generatedReport.analysisPoints.individual}</span>
+                                            </li>
+                                            <li className="flex gap-2 text-justify">
+                                                <span className="font-bold text-indigo-700 min-w-[140px]">4. Hambatan (Pending):</span>
+                                                <span>{generatedReport.analysisPoints.pending}</span>
+                                            </li>
+                                            <li className="flex gap-2 text-justify">
+                                                <span className="font-bold text-indigo-700 min-w-[140px]">5. Rencana Kerja:</span>
+                                                <span>{generatedReport.analysisPoints.workPlan}</span>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </section>
                                 <section className="bg-orange-50 p-6 rounded border-l-4 border-orange-500">
                                     <h2 className="text-sm font-bold text-orange-900 uppercase tracking-wider mb-3 flex items-center gap-2">
