@@ -14,6 +14,9 @@ interface UpdatePlanPayload {
     data: Partial<ActionPlan>
 }
 
+import { DateRange } from "react-day-picker"
+import { DatePickerWithRange } from "@/components/ui/date-range-picker"
+
 import { motion } from "framer-motion"
 
 // Animation Variants
@@ -44,14 +47,9 @@ export default function TimelinePage() {
     const [isGroupOpen, setIsGroupOpen] = useState<Record<string, boolean>>({})
 
     // Filter State
-    const currentYear = new Date().getFullYear();
-    const [filterYear, setFilterYear] = useState(currentYear);
-    const [filterMonth, setFilterMonth] = useState<string>("All"); // "All", "1"..."12"
-
-    // Active Filters (Applied on "Cari")
-    const [activeFilters, setActiveFilters] = useState({
-        year: currentYear,
-        month: "All"
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
+        from: new Date(new Date().getFullYear(), 0, 1), // Default to current year start
+        to: new Date(new Date().getFullYear(), 11, 31)  // Default to current year end
     });
 
     // Fetch Action Plans instead of Tasks
@@ -67,20 +65,11 @@ export default function TimelinePage() {
         },
     })
 
-    const handleSearch = () => {
-        setActiveFilters({
-            year: filterYear,
-            month: filterMonth
-        });
-    }
+    // Search handler removed as DatePicker updates state directly
+
 
     const handleReset = () => {
-        setFilterYear(currentYear);
-        setFilterMonth("All");
-        setActiveFilters({
-            year: currentYear,
-            month: "All"
-        });
+        setDateRange(undefined);
     }
 
     // Smart Summary Stats
@@ -101,13 +90,17 @@ export default function TimelinePage() {
             if (!p.startDate) return false;
             const d = new Date(p.startDate);
 
-            // Year Filter
-            if (d.getFullYear() !== activeFilters.year) return false;
+            // Date Range Filter
+            if (dateRange?.from) {
+                const start = new Date(dateRange.from);
+                start.setHours(0, 0, 0, 0);
+                if (d < start) return false;
+            }
 
-            // Month Filter
-            if (activeFilters.month !== "All") {
-                // Month is 0-indexed in JS, but UI is 1-12
-                if (d.getMonth() + 1 !== parseInt(activeFilters.month)) return false;
+            if (dateRange?.to) {
+                const end = new Date(dateRange.to);
+                end.setHours(23, 59, 59, 999);
+                if (d > end) return false;
             }
 
             return true;
@@ -294,7 +287,7 @@ export default function TimelinePage() {
         })
 
         return finalTasks
-    }, [plans, isGroupOpen, activeFilters])
+    }, [plans, isGroupOpen, dateRange])
 
 
     const handleTaskChange = (task: Task) => {
@@ -336,11 +329,7 @@ export default function TimelinePage() {
         )
     }
 
-    // Generate Month Options
-    const months = [
-        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-    ];
+
 
     return (
         <div className="p-6 h-full flex flex-col bg-slate-50/50 font-sans">
@@ -378,34 +367,15 @@ export default function TimelinePage() {
 
                 {/* Filter Toolbar - Updated Style */}
                 <motion.div variants={itemVariants} className="flex flex-col md:flex-row items-end md:items-center gap-4 bg-white p-2 rounded-2xl border border-indigo-50 shadow-lg shadow-indigo-100/50">
-                    {/* Year Stepper */}
-                    <div className="flex items-center bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100">
-                        <button
-                            onClick={() => setFilterYear(prev => prev - 1)}
-                            className="p-1.5 hover:bg-white hover:text-indigo-600 rounded-lg transition-all text-slate-400"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <span className="mx-4 font-bold text-slate-700 min-w-[50px] text-center">{filterYear}</span>
-                        <button
-                            onClick={() => setFilterYear(prev => prev + 1)}
-                            className="p-1.5 hover:bg-white hover:text-indigo-600 rounded-lg transition-all text-slate-400"
-                        >
-                            <ChevronRight className="w-4 h-4" />
-                        </button>
-                    </div>
 
-                    {/* Month Dropdown */}
-                    <select
-                        className="px-4 py-2.5 bg-slate-50 border-0 rounded-xl text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 hover:bg-white hover:shadow-sm transition-all min-w-[140px]"
-                        value={filterMonth}
-                        onChange={(e) => setFilterMonth(e.target.value)}
-                    >
-                        <option value="All">All Months</option>
-                        {months.map((m, idx) => (
-                            <option key={m} value={String(idx + 1)}>{m}</option>
-                        ))}
-                    </select>
+                    {/* Date Picker */}
+                    <div className="flex items-center gap-2">
+                        <DatePickerWithRange
+                            date={dateRange}
+                            setDate={setDateRange}
+                            className="bg-slate-50 border-slate-100"
+                        />
+                    </div>
 
                     <div className="w-px h-8 bg-slate-100 hidden md:block" />
 
@@ -433,13 +403,6 @@ export default function TimelinePage() {
 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2 ml-auto">
-                        <button
-                            onClick={handleSearch}
-                            className="flex items-center px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-xs font-bold shadow-lg shadow-indigo-500/30 transition-all active:scale-95"
-                        >
-                            <Search className="w-3 h-3 mr-2" />
-                            Filter
-                        </button>
                         <button
                             onClick={handleReset}
                             className="flex items-center px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-full text-xs font-bold transition-all active:scale-95"
