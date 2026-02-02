@@ -39,7 +39,6 @@ export const actionPlanService = {
         console.log(`[ActionPlan] Creating:`, data);
         try {
             const sanitizedData = { ...data };
-            sanitizedData.dueDate = parseDate(sanitizedData.dueDate);
             sanitizedData.startDate = parseDate(sanitizedData.startDate);
             sanitizedData.endDate = parseDate(sanitizedData.endDate);
 
@@ -57,7 +56,6 @@ export const actionPlanService = {
         // Sanitize all items
         const sanitizedData = data.map(item => ({
             ...item,
-            dueDate: parseDate(item.dueDate),
             startDate: parseDate(item.startDate),
             endDate: parseDate(item.endDate)
         }));
@@ -98,7 +96,6 @@ export const actionPlanService = {
             const sanitizedData = { ...updatableData };
 
             // Helper to handle date strings
-            if (sanitizedData.dueDate !== undefined) sanitizedData.dueDate = parseDate(sanitizedData.dueDate);
             if (sanitizedData.startDate !== undefined) sanitizedData.startDate = parseDate(sanitizedData.startDate);
             if (sanitizedData.endDate !== undefined) sanitizedData.endDate = parseDate(sanitizedData.endDate);
 
