@@ -9,9 +9,10 @@ import {
     Loader2, FileText, Search, Filter, Calendar, TrendingUp,
     AlertTriangle, CheckCircle, Target, Wallet, ArrowRight,
     Building2, Printer, Download, UserCircle, Briefcase, Trophy,
-    Folder, FolderOpen, ChevronRight, ChevronDown, Clock
+    Folder, FolderOpen, ChevronRight, ChevronDown, Clock, Pencil, X, Save
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select"
@@ -59,6 +60,14 @@ interface PersonPerformance {
     score: number;
 }
 
+interface AnalysisPoints {
+    achievement: string;
+    division: string;
+    individual: string;
+    pending: string;
+    workPlan: string;
+}
+
 export default function ReportingPage() {
     // -------------------------------------------------------------------------
     // 1. Data Fetching
@@ -97,6 +106,11 @@ export default function ReportingPage() {
 
     const [isReportGenerated, setIsReportGenerated] = useState(false)
     const reportRef = useRef<HTMLDivElement>(null)
+
+    // Manual Analysis State
+    const [manualAnalysis, setManualAnalysis] = useState<AnalysisPoints | null>(null);
+    const [isEditingAnalysis, setIsEditingAnalysis] = useState(false);
+    const [tempAnalysis, setTempAnalysis] = useState<AnalysisPoints | null>(null);
 
     // -------------------------------------------------------------------------
     // 3. Logic: Date Range Calculation
@@ -408,6 +422,28 @@ export default function ReportingPage() {
 
     }, [isReportGenerated, plans, selectedDivisi, periodType, selectedYear, selectedMonth, selectedWeek, selectedQuarter, selectedSemester, dateRange]);
 
+    // Sync generated analysis to manual state when generation happens
+    React.useEffect(() => {
+        if (generatedReport?.analysisPoints) {
+            setManualAnalysis(generatedReport.analysisPoints);
+        }
+    }, [generatedReport]);
+
+    const handleStartEdit = () => {
+        setTempAnalysis(manualAnalysis);
+        setIsEditingAnalysis(true);
+    };
+
+    const handleSaveEdit = () => {
+        setManualAnalysis(tempAnalysis);
+        setIsEditingAnalysis(false);
+    };
+
+    const handleCancelEdit = () => {
+        setTempAnalysis(null);
+        setIsEditingAnalysis(false);
+    };
+
     // Helper for Avatar
     const getUserImage = (name: string) => {
         if (!users) return null;
@@ -521,6 +557,14 @@ export default function ReportingPage() {
                 }
             });
 
+            // Hide buttons (Edit/Save/Cancel) during capture
+            const buttons = element.querySelectorAll('button');
+            const originalButtonStyles: { el: HTMLButtonElement; display: string }[] = [];
+            buttons.forEach((btn) => {
+                originalButtonStyles.push({ el: btn, display: btn.style.display });
+                btn.style.display = 'none';
+            });
+
             // Wait for any reflows
             await new Promise(resolve => setTimeout(resolve, 800));
 
@@ -547,6 +591,9 @@ export default function ReportingPage() {
             });
             originalGridStyles.forEach(({ el, styles }) => {
                 el.style.cssText = styles;
+            });
+            originalButtonStyles.forEach(({ el, display }) => {
+                el.style.display = display;
             });
 
             const imgData = canvas.toDataURL('image/png');
@@ -773,33 +820,97 @@ export default function ReportingPage() {
                             {/* Section 1: Strategic Analysis */}
                             <div className="mb-10">
                                 <section className="bg-slate-50 p-6 rounded border-l-4 border-indigo-600">
-                                    <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                        <TrendingUp className="w-4 h-4" />
-                                        Evaluasi Kinerja Makro
-                                    </h2>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-2">
+                                            <TrendingUp className="w-4 h-4" />
+                                            Evaluasi Kinerja Makro
+                                        </h2>
+                                        <div className="flex gap-1">
+                                            {isEditingAnalysis ? (
+                                                <>
+                                                    <Button size="sm" onClick={handleSaveEdit} className="h-6 w-6 p-0 rounded-full bg-green-600 hover:bg-green-700">
+                                                        <Save className="w-3 h-3 text-white" />
+                                                    </Button>
+                                                    <Button size="sm" onClick={handleCancelEdit} className="h-6 w-6 p-0 rounded-full bg-red-500 hover:bg-red-600">
+                                                        <X className="w-3 h-3 text-white" />
+                                                    </Button>
+                                                </>
+                                            ) : (
+                                                <Button size="sm" variant="ghost" onClick={handleStartEdit} className="h-6 w-6 p-0 rounded-full hover:bg-slate-200">
+                                                    <Pencil className="w-3 h-3 text-slate-500" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     <div className="text-slate-700 leading-relaxed text-justify text-xs font-sans">
-                                        <ul className="space-y-3 mt-2">
-                                            <li className="flex gap-2 text-justify">
-                                                <span className="font-bold text-indigo-700 min-w-[140px]">1. Ketercapaian:</span>
-                                                <span>{generatedReport.analysisPoints.achievement}</span>
-                                            </li>
-                                            <li className="flex gap-2 text-justify">
-                                                <span className="font-bold text-indigo-700 min-w-[140px]">2. Evaluasi Divisi:</span>
-                                                <span>{generatedReport.analysisPoints.division.split('**').map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part)}</span>
-                                            </li>
-                                            <li className="flex gap-2 text-justify">
-                                                <span className="font-bold text-indigo-700 min-w-[140px]">3. Evaluasi Individu:</span>
-                                                <span>{generatedReport.analysisPoints.individual}</span>
-                                            </li>
-                                            <li className="flex gap-2 text-justify">
-                                                <span className="font-bold text-indigo-700 min-w-[140px]">4. Hambatan (Pending):</span>
-                                                <span>{generatedReport.analysisPoints.pending}</span>
-                                            </li>
-                                            <li className="flex gap-2 text-justify">
-                                                <span className="font-bold text-indigo-700 min-w-[140px]">5. Rencana Kerja:</span>
-                                                <span>{generatedReport.analysisPoints.workPlan}</span>
-                                            </li>
-                                        </ul>
+                                        {isEditingAnalysis && tempAnalysis ? (
+                                            <div className="space-y-4 mt-2">
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-indigo-700 uppercase">1. Ketercapaian</label>
+                                                    <Textarea
+                                                        value={tempAnalysis.achievement}
+                                                        onChange={(e) => setTempAnalysis({ ...tempAnalysis, achievement: e.target.value })}
+                                                        className="text-xs min-h-[60px]"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-indigo-700 uppercase">2. Evaluasi Divisi</label>
+                                                    <Textarea
+                                                        value={tempAnalysis.division}
+                                                        onChange={(e) => setTempAnalysis({ ...tempAnalysis, division: e.target.value })}
+                                                        className="text-xs min-h-[60px]"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-indigo-700 uppercase">3. Evaluasi Individu</label>
+                                                    <Textarea
+                                                        value={tempAnalysis.individual}
+                                                        onChange={(e) => setTempAnalysis({ ...tempAnalysis, individual: e.target.value })}
+                                                        className="text-xs min-h-[60px]"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-indigo-700 uppercase">4. Hambatan (Pending)</label>
+                                                    <Textarea
+                                                        value={tempAnalysis.pending}
+                                                        onChange={(e) => setTempAnalysis({ ...tempAnalysis, pending: e.target.value })}
+                                                        className="text-xs min-h-[60px]"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-indigo-700 uppercase">5. Rencana Kerja</label>
+                                                    <Textarea
+                                                        value={tempAnalysis.workPlan}
+                                                        onChange={(e) => setTempAnalysis({ ...tempAnalysis, workPlan: e.target.value })}
+                                                        className="text-xs min-h-[60px]"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <ul className="space-y-3 mt-2">
+                                                <li className="flex gap-2 text-justify">
+                                                    <span className="font-bold text-indigo-700 min-w-[140px]">1. Ketercapaian:</span>
+                                                    <span>{manualAnalysis?.achievement || generatedReport.analysisPoints.achievement}</span>
+                                                </li>
+                                                <li className="flex gap-2 text-justify">
+                                                    <span className="font-bold text-indigo-700 min-w-[140px]">2. Evaluasi Divisi:</span>
+                                                    <span>{(manualAnalysis?.division || generatedReport.analysisPoints.division).split('**').map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part)}</span>
+                                                </li>
+                                                <li className="flex gap-2 text-justify">
+                                                    <span className="font-bold text-indigo-700 min-w-[140px]">3. Evaluasi Individu:</span>
+                                                    <span>{manualAnalysis?.individual || generatedReport.analysisPoints.individual}</span>
+                                                </li>
+                                                <li className="flex gap-2 text-justify">
+                                                    <span className="font-bold text-indigo-700 min-w-[140px]">4. Hambatan (Pending):</span>
+                                                    <span>{manualAnalysis?.pending || generatedReport.analysisPoints.pending}</span>
+                                                </li>
+                                                <li className="flex gap-2 text-justify">
+                                                    <span className="font-bold text-indigo-700 min-w-[140px]">5. Rencana Kerja:</span>
+                                                    <span>{manualAnalysis?.workPlan || generatedReport.analysisPoints.workPlan}</span>
+                                                </li>
+                                            </ul>
+                                        )}
                                     </div>
                                 </section>
 
