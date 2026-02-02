@@ -143,14 +143,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                 { id: "target", icon: Target, label: "Target", href: "/canvassing/target" },
             ]
         },
-        {
-            id: "input_penerimaan",
-            icon: LayoutDashboard,
-            label: "Dashboard Input Penerimaan",
-            children: [
-                { id: "input_canvassing", icon: Target, label: "Canvasing", href: "/input-penerimaan/canvassing" },
-            ]
-        },
+
 
         { id: "chat", icon: Send, label: "Chat", href: "/chat" },
     ]
