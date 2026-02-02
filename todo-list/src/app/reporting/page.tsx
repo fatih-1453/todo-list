@@ -21,6 +21,7 @@ import {
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import {
+    format, startOfWeek, endOfWeek, endOfMonth, endOfQuarter, endOfYear,
     addWeeks, addMonths, isWithinInterval, getWeek, eachDayOfInterval,
     differenceInCalendarDays, addDays, isSameDay, subMonths
 } from "date-fns"
@@ -382,8 +383,7 @@ export default function ReportingPage() {
             futurePeriodLabel: format(futureStart, "dd MMM") + " - " + format(futureEnd, "dd MMM yyyy"),
             total, completed, pending, completionRate,
             totalBudget, totalRealization,
-            analysisPoints, mitigationText, // Used analysisPoints object instead
-
+            analysisPoints,
             evaluationItems, futureItems, futureByDivisi,
             statusData,
             sortedDivisions, sortedPeople, sortedPendingPeople,
@@ -771,8 +771,8 @@ export default function ReportingPage() {
                             </div>
 
                             {/* Section 1: Strategic Analysis */}
-                            <div className="grid grid-cols-3 gap-6 mb-10">
-                                <section className="col-span-2 bg-slate-50 p-6 rounded border-l-4 border-indigo-600">
+                            <div className="mb-10">
+                                <section className="bg-slate-50 p-6 rounded border-l-4 border-indigo-600">
                                     <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center gap-2">
                                         <TrendingUp className="w-4 h-4" />
                                         Evaluasi Kinerja Makro
@@ -802,15 +802,7 @@ export default function ReportingPage() {
                                         </ul>
                                     </div>
                                 </section>
-                                <section className="bg-orange-50 p-6 rounded border-l-4 border-orange-500">
-                                    <h2 className="text-sm font-bold text-orange-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                        <AlertTriangle className="w-4 h-4" />
-                                        Resiko & Mitigasi
-                                    </h2>
-                                    <p className="text-slate-800 leading-relaxed text-justify text-xs italic">
-                                        "{generatedReport.mitigationText}"
-                                    </p>
-                                </section>
+
                             </div>
 
                             {/* Section: Visual Analytics (Charts) */}
